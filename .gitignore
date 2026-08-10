@@ -1,0 +1,11 @@
+.DS_Store
+
+bin/
+obj/
+Library/
+Temp/
+Logs/
+Build/
+Builds/
+
+*.pem

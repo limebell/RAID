@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Raid.Battle/Raid.Battle.csproj" />
+    <Project Path="src/Raid.Contracts/Raid.Contracts.csproj" />
+    <Project Path="src/Raid.GameServer/Raid.GameServer.csproj" />
+    <Project Path="src/Raid.LobbyServer/Raid.LobbyServer.csproj" />
+    <Project Path="src/Raid.ServiceContracts/Raid.ServiceContracts.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Raid.Battle.Tests/Raid.Battle.Tests.csproj" />
+  </Folder>
+</Solution>
