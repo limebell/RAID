@@ -10,6 +10,7 @@ public sealed record BattleEventDto(
     long? OwnerId = null,
     long? AttackerId = null,
     Vector2Dto? Position = null,
+    Vector2Dto? FacingDirection = null,
     string? SkillId = null,
     string? Phase = null,
     string? Reason = null,

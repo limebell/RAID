@@ -54,6 +54,7 @@ public sealed class BattleWorld
         PlayerClassDefinition playerClass,
         Vector2 position,
         float moveSpeed = 6f,
+        float turnSpeedRadiansPerSecond = 12f,
         float maxHealth = 1000f)
     {
         var entity = new PlayerEntity(
@@ -63,14 +64,19 @@ public sealed class BattleWorld
             playerClass,
             position,
             moveSpeed,
+            turnSpeedRadiansPerSecond,
             maxHealth);
         Register(entity);
         return entity;
     }
 
-    public DummyEntity CreateDummy(Vector2 position, float maxHealth = 100_000f)
+    public DummyEntity CreateDummy(
+        Vector2 position,
+        float moveSpeed = 0f,
+        float turnSpeedRadiansPerSecond = 6f,
+        float maxHealth = 100_000f)
     {
-        var entity = new DummyEntity(NextEntityId(), position, maxHealth);
+        var entity = new DummyEntity(NextEntityId(), position, moveSpeed, turnSpeedRadiansPerSecond, maxHealth);
         Register(entity);
         return entity;
     }

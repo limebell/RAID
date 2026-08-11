@@ -142,7 +142,7 @@ public sealed class PracticeModeTests
             PositionSetReason.Reset));
 
         Assert.Equal(new Vector2(2f, 3f), player.Position);
-        Assert.Null(player.ActiveMove);
+        Assert.Null(player.ActiveMovement);
     }
 
     [Fact]

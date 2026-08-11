@@ -10,16 +10,15 @@ public sealed class PlayerEntity(
     PlayerClassDefinition playerClass,
     Vector2 position,
     float moveSpeed = 6f,
+    float turnSpeedRadiansPerSecond = 12f,
     float maxHealth = 1000f)
-    : BattleEntity(id, EntityKind.Player, position, maxHealth)
+    : BattleEntity(id, EntityKind.Player, position, Vector2.UnitX, moveSpeed, turnSpeedRadiansPerSecond, maxHealth)
 {
     public string UserId { get; } = userId;
 
     public int ParticipantSlot { get; } = participantSlot;
 
     public PlayerClassDefinition Class { get; } = playerClass;
-
-    public float MoveSpeed { get; } = moveSpeed;
 
     public SkillDefinition? FindSkill(string skillId)
     {

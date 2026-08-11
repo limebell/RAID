@@ -6,4 +6,5 @@ namespace Raid.Battle.Events;
 public sealed record EntityMoveCompletedEvent(
     long Tick,
     EntityId EntityId,
-    Vector2 Position) : IBattleEvent;
+    Vector2 Position,
+    Vector2 FacingDirection) : IBattleEvent;

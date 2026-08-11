@@ -23,7 +23,7 @@ public sealed class ActionSystem(BattleWorld world)
             return false;
         }
 
-        owner.ActiveMove = null;
+        owner.ActiveMovement = null;
         owner.Actions.CurrentAction = action;
 
         var context = new ActionContext(world, owner, action)

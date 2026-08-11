@@ -15,6 +15,8 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
+    builder.WebHost.UseUrls("http://0.0.0.0:5122");
+
     builder.Services.AddSerilog((services, configuration) => configuration
         .ReadFrom.Configuration(builder.Configuration)
         .ReadFrom.Services(services)

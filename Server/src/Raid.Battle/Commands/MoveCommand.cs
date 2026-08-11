@@ -33,8 +33,24 @@ public sealed class MoveCommand(EntityId issuerId, Vector2 destination) : IWorld
             return CommandResult.Failure("Player is already acting.");
         }
 
+        var desiredFacingDirection = Destination - player.Position;
+        if (desiredFacingDirection == Vector2.Zero)
+        {
+            desiredFacingDirection = player.FacingDirection;
+        }
+        else
+        {
+            desiredFacingDirection = Vector2.Normalize(desiredFacingDirection);
+        }
+
         context.World.Movement.SetIntent(
-            new MovementIntent(player.Id, Destination, player.MoveSpeed));
+            new MovementIntent(
+                player.Id,
+                Destination,
+                desiredFacingDirection,
+                MoveSpeed: player.MoveSpeed,
+                TurnSpeedRadiansPerSecond: player.TurnSpeedRadiansPerSecond,
+                FacingPolicy: MovementFacingPolicy.RotateWhileMoving));
 
         return CommandResult.Success();
     }
