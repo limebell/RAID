@@ -1,5 +1,6 @@
 using Raid.Battle.Entities;
 using Raid.Battle.Events;
+using Raid.Battle.Snapshots;
 using Raid.Contracts.Battle.Events;
 using Raid.Contracts.Battle.Snapshots;
 using Raid.Contracts.Common;
@@ -11,7 +12,8 @@ public static class BattleDtoMapper
     public static BattleSnapshotDto ToSnapshot(RaidSession session)
     {
         var entities = session.World.Entities.All()
-            .Select(ToEntitySnapshot)
+            .Select(EntitySnapshot.FromEntity)
+            .Select(ToEntitySnapshotDto)
             .ToArray();
 
         return new BattleSnapshotDto(
@@ -21,17 +23,22 @@ public static class BattleDtoMapper
             entities);
     }
 
-    public static EntitySnapshotDto ToEntitySnapshot(BattleEntity entity)
+    public static EntitySnapshotDto ToEntitySnapshotDto(BattleEntity entity)
+    {
+        return ToEntitySnapshotDto(EntitySnapshot.FromEntity(entity));
+    }
+
+    public static EntitySnapshotDto ToEntitySnapshotDto(EntitySnapshot snapshot)
     {
         return new EntitySnapshotDto(
-            entity.Id.Value,
-            entity.Kind.ToString(),
-            new Vector2Dto(entity.Position.X, entity.Position.Y),
-            new Vector2Dto(entity.FacingDirection.X, entity.FacingDirection.Y),
-            entity.CurrentHealth,
-            entity.MaxHealth,
-            entity.Actions.IsBusy,
-            entity.Actions.CurrentAction?.CurrentPhaseKind?.ToString());
+            snapshot.EntityId.Value,
+            snapshot.Kind.ToString(),
+            new Vector2Dto(snapshot.Position.X, snapshot.Position.Y),
+            new Vector2Dto(snapshot.FacingDirection.X, snapshot.FacingDirection.Y),
+            snapshot.CurrentHealth,
+            snapshot.MaxHealth,
+            snapshot.IsBusy,
+            snapshot.CurrentPhase);
     }
 
     public static BattleEventDto ToEventDto(IBattleEvent battleEvent)
@@ -41,48 +48,45 @@ public static class BattleDtoMapper
             EntityMovedEvent moved => new BattleEventDto(
                 Type: BattleEventType.EntityMoved,
                 Tick: moved.Tick,
-                EntityId: moved.EntityId.Value,
-                Position: new Vector2Dto(moved.Position.X, moved.Position.Y),
-                FacingDirection: new Vector2Dto(moved.FacingDirection.X, moved.FacingDirection.Y)),
+                Entity: ToEntitySnapshotDto(moved.Entity)),
             EntityMoveCompletedEvent completed => new BattleEventDto(
                 Type: BattleEventType.EntityMoveCompleted,
                 Tick: completed.Tick,
-                EntityId: completed.EntityId.Value,
-                Position: new Vector2Dto(completed.Position.X, completed.Position.Y),
-                FacingDirection: new Vector2Dto(completed.FacingDirection.X, completed.FacingDirection.Y)),
+                Entity: ToEntitySnapshotDto(completed.Entity)),
             PositionSetEvent positionSet => new BattleEventDto(
                 Type: BattleEventType.PositionSet,
                 Tick: positionSet.Tick,
-                EntityId: positionSet.EntityId.Value,
-                Position: new Vector2Dto(positionSet.Position.X, positionSet.Position.Y),
-                FacingDirection: new Vector2Dto(positionSet.FacingDirection.X, positionSet.FacingDirection.Y),
+                Entity: ToEntitySnapshotDto(positionSet.Entity),
                 Reason: positionSet.Reason.ToString()),
             ActionStartedEvent started => new BattleEventDto(
                 Type: BattleEventType.ActionStarted,
                 Tick: started.Tick,
-                OwnerId: started.OwnerId.Value,
+                Entity: ToEntitySnapshotDto(started.Entity),
                 SkillId: started.SkillId,
                 Phase: started.Phase?.ToString()),
             ActionPhaseChangedEvent phaseChanged => new BattleEventDto(
                 Type: BattleEventType.ActionPhaseChanged,
                 Tick: phaseChanged.Tick,
-                OwnerId: phaseChanged.OwnerId.Value,
+                Entity: ToEntitySnapshotDto(phaseChanged.Entity),
                 SkillId: phaseChanged.SkillId,
                 Phase: phaseChanged.Phase.ToString()),
             ActionEndedEvent ended => new BattleEventDto(
                 Type: BattleEventType.ActionEnded,
                 Tick: ended.Tick,
-                OwnerId: ended.OwnerId.Value,
+                Entity: ToEntitySnapshotDto(ended.Entity),
                 SkillId: ended.SkillId,
                 Reason: ended.Reason.ToString()),
             DamageAppliedEvent damage => new BattleEventDto(
                 Type: BattleEventType.DamageApplied,
                 Tick: damage.Tick,
+                Entity: ToEntitySnapshotDto(damage.Target),
                 AttackerId: damage.AttackerId.Value,
-                TargetEntityId: damage.TargetId.Value,
                 SkillId: damage.SkillId,
-                Amount: damage.Amount,
-                RemainingHealth: damage.TargetRemainingHealth),
+                Amount: damage.Amount),
+            EntitySpawnedEvent spawned => new BattleEventDto(
+                Type: BattleEventType.EntitySpawned,
+                Tick: spawned.Tick,
+                Entity: ToEntitySnapshotDto(spawned.Entity)),
             _ => new BattleEventDto(
                 Type: BattleEventType.Unknown,
                 Tick: battleEvent.Tick)

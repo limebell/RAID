@@ -1,10 +1,14 @@
-using System.Numerics;
 using Raid.Battle.Entities;
+using Raid.Battle.Snapshots;
 
 namespace Raid.Battle.Events;
 
 public sealed record EntityMoveCompletedEvent(
     long Tick,
-    EntityId EntityId,
-    Vector2 Position,
-    Vector2 FacingDirection) : IBattleEvent;
+    EntitySnapshot Entity) : IBattleEvent
+{
+    public static EntityMoveCompletedEvent FromEntity(BattleEntity entity, long tick)
+    {
+        return new EntityMoveCompletedEvent(tick, EntitySnapshot.FromEntity(entity));
+    }
+}

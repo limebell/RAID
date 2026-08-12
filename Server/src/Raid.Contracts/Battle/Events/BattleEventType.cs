@@ -9,5 +9,6 @@ public enum BattleEventType
     ActionStarted = 4,
     ActionPhaseChanged = 5,
     ActionEnded = 6,
-    DamageApplied = 7
+    DamageApplied = 7,
+    EntitySpawned = 8
 }

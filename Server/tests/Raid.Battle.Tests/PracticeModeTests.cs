@@ -35,7 +35,7 @@ public sealed class PracticeModeTests
 
         var events = world.Events.Drain();
         Assert.Contains(events, e => e is DamageAppliedEvent damage
-            && damage.TargetId == dummy.Id
+            && damage.Target.EntityId == dummy.Id
             && damage.Amount == skill.Damage);
     }
 
@@ -136,7 +136,7 @@ public sealed class PracticeModeTests
         world.Commands.Enqueue(new MoveCommand(player.Id, new Vector2(10f, 0f)));
         world.Loop.Tick();
 
-        world.Positions.SetPosition(new PositionSetRequest(
+        world.Movement.SetPosition(new PositionSetRequest(
             player.Id,
             new Vector2(2f, 3f),
             PositionSetReason.Reset));

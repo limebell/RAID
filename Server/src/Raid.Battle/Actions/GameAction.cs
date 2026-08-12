@@ -1,5 +1,6 @@
 using Raid.Battle.Entities;
 using Raid.Battle.Events;
+using Raid.Battle.Snapshots;
 
 namespace Raid.Battle.Actions;
 
@@ -40,7 +41,7 @@ public sealed class GameAction(
         AdvanceToNextPhase();
         context.World.Events.Add(new ActionStartedEvent(
             context.World.Tick,
-            OwnerId,
+            EntitySnapshot.FromEntity(context.Owner),
             Id,
             SkillId,
             CurrentPhaseKind));
@@ -98,7 +99,7 @@ public sealed class GameAction(
         phase.Enter(_context!);
         _context!.World.Events.Add(new ActionPhaseChangedEvent(
             _context.World.Tick,
-            OwnerId,
+            EntitySnapshot.FromEntity(_context.Owner),
             Id,
             SkillId,
             phase.Kind));
@@ -110,7 +111,7 @@ public sealed class GameAction(
         EndReason = reason;
         _context?.World.Events.Add(new ActionEndedEvent(
             _context.World.Tick,
-            OwnerId,
+            EntitySnapshot.FromEntity(_context.Owner),
             Id,
             SkillId,
             reason));

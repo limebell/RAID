@@ -38,7 +38,7 @@ public static class BattleWorldFactory
             selectedClass,
             spawnPosition);
 
-        world.Positions.SetPosition(new PositionSetRequest(
+        world.Movement.SetPosition(new PositionSetRequest(
             player.Id,
             spawnPosition,
             PositionSetReason.Spawn));
@@ -51,7 +51,7 @@ public static class BattleWorldFactory
         var world = new BattleWorld(settings);
         var dummy = world.CreateDummy(new Vector2(5f, 0f));
 
-        world.Positions.SetPosition(new PositionSetRequest(
+        world.Movement.SetPosition(new PositionSetRequest(
             dummy.Id,
             new Vector2(5f, 0f),
             PositionSetReason.Spawn));

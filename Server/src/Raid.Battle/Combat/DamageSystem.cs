@@ -1,5 +1,6 @@
 using Raid.Battle.Entities;
 using Raid.Battle.Events;
+using Raid.Battle.Snapshots;
 using Raid.Battle.World;
 
 namespace Raid.Battle.Combat;
@@ -23,11 +24,10 @@ public sealed class DamageSystem(BattleWorld world)
 
         world.Events.Add(new DamageAppliedEvent(
             world.Tick,
+            EntitySnapshot.FromEntity(target),
             attackerId,
-            targetId,
             skillId,
-            applied,
-            target.CurrentHealth));
+            applied));
 
         return true;
     }

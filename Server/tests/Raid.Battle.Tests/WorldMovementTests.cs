@@ -37,8 +37,8 @@ public sealed class WorldMovementTests
 
         var events = world.Events.Drain();
         Assert.Contains(events, battleEvent => battleEvent is EntityMoveCompletedEvent completed
-            && completed.EntityId == player.Id
-            && completed.Position == new Vector2(1f, 0f));
+            && completed.Entity.EntityId == player.Id
+            && completed.Entity.Position == new Vector2(1f, 0f));
     }
 
     [Fact]
@@ -126,9 +126,26 @@ public sealed class WorldMovementTests
 
         var events = world.Events.Drain();
         Assert.Contains(events, battleEvent => battleEvent is EntityMovedEvent moved
-            && moved.EntityId == player.Id
-            && moved.Position == Vector2.Zero
-            && Vector2.Distance(moved.FacingDirection, Vector2.UnitY) < 0.001f);
+            && moved.Entity.EntityId == player.Id
+            && moved.Entity.Position == Vector2.Zero
+            && Vector2.Distance(moved.Entity.FacingDirection, Vector2.UnitY) < 0.001f);
+    }
+
+    [Fact]
+    public void CreatePlayer_EmitsEntitySpawnedEvent()
+    {
+        var world = new BattleWorld();
+        var player = world.CreatePlayer(
+            "user-1",
+            0,
+            TestClassDefinition.Create(),
+            new Vector2(1f, 2f));
+
+        var events = world.Events.Drain();
+        Assert.Contains(events, battleEvent => battleEvent is EntitySpawnedEvent spawned
+            && spawned.Entity.EntityId == player.Id
+            && spawned.Entity.Kind == EntityKind.Player
+            && spawned.Entity.Position == new Vector2(1f, 2f));
     }
 
     [Fact]

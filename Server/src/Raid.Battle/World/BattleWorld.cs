@@ -21,7 +21,6 @@ public sealed class BattleWorld
         Actions = new ActionSystem(this);
         Hits = new HitRequestSystem(this);
         Movement = new MovementSystem(this);
-        Positions = new PositionCorrectionSystem(this);
         Combat = new DamageSystem(this);
         Loop = new WorldLoop(this, Settings);
     }
@@ -41,8 +40,6 @@ public sealed class BattleWorld
     public HitRequestSystem Hits { get; }
 
     public MovementSystem Movement { get; }
-
-    public PositionCorrectionSystem Positions { get; }
 
     public DamageSystem Combat { get; }
 
@@ -84,6 +81,7 @@ public sealed class BattleWorld
     public void Register(BattleEntity entity)
     {
         Entities.Add(entity);
+        Events.Add(EntitySpawnedEvent.FromEntity(entity, Tick));
     }
 
     public bool Remove(EntityId entityId)

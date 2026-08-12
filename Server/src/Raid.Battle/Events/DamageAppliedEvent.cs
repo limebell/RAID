@@ -1,11 +1,11 @@
 using Raid.Battle.Entities;
+using Raid.Battle.Snapshots;
 
 namespace Raid.Battle.Events;
 
 public sealed record DamageAppliedEvent(
     long Tick,
+    EntitySnapshot Target,
     EntityId AttackerId,
-    EntityId TargetId,
     string SkillId,
-    float Amount,
-    float TargetRemainingHealth) : IBattleEvent;
+    float Amount) : IBattleEvent;

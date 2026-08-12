@@ -1,11 +1,11 @@
 using Raid.Battle.Actions;
-using Raid.Battle.Entities;
+using Raid.Battle.Snapshots;
 
 namespace Raid.Battle.Events;
 
 public sealed record ActionPhaseChangedEvent(
     long Tick,
-    EntityId OwnerId,
+    EntitySnapshot Entity,
     ActionId ActionId,
     string SkillId,
     ActionPhaseKind Phase) : IBattleEvent;
