@@ -3,7 +3,10 @@ namespace Raid.Battle.Combat;
 public sealed class PlayerClassDefinition(
     string classId,
     string displayName,
-    IReadOnlyList<SkillDefinition> skills)
+    IReadOnlyList<SkillDefinition> skills,
+    float maxHealth,
+    float maxMana,
+    float manaRegenPerSecond)
 {
     public string ClassId { get; } = string.IsNullOrWhiteSpace(classId)
         ? throw new ArgumentException("Class id is required.", nameof(classId))
@@ -15,6 +18,12 @@ public sealed class PlayerClassDefinition(
 
     public IReadOnlyList<SkillDefinition> Skills { get; } = skills
         ?? throw new ArgumentNullException(nameof(skills));
+
+    public float MaxHealth { get; } = maxHealth;
+
+    public float MaxMana { get; } = maxMana;
+
+    public float ManaRegenPerSecond { get; } = manaRegenPerSecond;
 
     public SkillDefinition? FindSkill(string skillId)
     {

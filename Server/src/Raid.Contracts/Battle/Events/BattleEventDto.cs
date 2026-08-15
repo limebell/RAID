@@ -18,6 +18,7 @@ namespace Raid.Contracts.Battle.Events;
 /// <see cref="BattleEventType.ActionPhaseChanged"/>,
 /// <see cref="BattleEventType.ActionEnded"/> — action owner (caster);
 /// <see cref="BattleEventType.DamageApplied"/> — damage target (includes updated health).
+/// <see cref="BattleEventType.ResourceChanged"/> — entity whose mana changed from natural regen.
 /// </param>
 /// <param name="AttackerId">
 /// Attacker entity id. Used by <see cref="BattleEventType.DamageApplied"/> only; the target is <paramref name="Entity"/>.
@@ -27,7 +28,9 @@ namespace Raid.Contracts.Battle.Events;
 /// <see cref="BattleEventType.ActionStarted"/>,
 /// <see cref="BattleEventType.ActionPhaseChanged"/>,
 /// <see cref="BattleEventType.ActionEnded"/>, and
-/// <see cref="BattleEventType.DamageApplied"/>.
+/// <see cref="BattleEventType.DamageApplied"/>,
+/// <see cref="BattleEventType.CooldownStarted"/>, and
+/// <see cref="BattleEventType.CooldownReady"/>.
 /// </param>
 /// <param name="Phase">
 /// Current action phase name. Used by
@@ -39,7 +42,10 @@ namespace Raid.Contracts.Battle.Events;
 /// <see cref="BattleEventType.PositionSet"/> (spawn, reset, …) and
 /// <see cref="BattleEventType.ActionEnded"/> (completed, cancelled, …).
 /// </param>
-/// <param name="Amount">Damage dealt. Used by <see cref="BattleEventType.DamageApplied"/> only.</param>
+/// <param name="Amount">
+/// Damage dealt for <see cref="BattleEventType.DamageApplied"/>;
+/// cooldown duration in seconds for <see cref="BattleEventType.CooldownStarted"/>.
+/// </param>
 public sealed record BattleEventDto(
     BattleEventType Type,
     long Tick,

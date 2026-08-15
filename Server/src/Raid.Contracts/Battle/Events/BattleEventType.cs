@@ -10,5 +10,8 @@ public enum BattleEventType
     ActionPhaseChanged = 5,
     ActionEnded = 6,
     DamageApplied = 7,
-    EntitySpawned = 8
+    EntitySpawned = 8,
+    ResourceChanged = 9,
+    CooldownStarted = 11,
+    CooldownReady = 12
 }

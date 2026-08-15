@@ -23,6 +23,7 @@ public sealed class WorldMovementTests
             participantSlot: 0,
             playerClass: TestClassDefinition.Create(),
             position: Vector2.Zero,
+            facingDirection: Vector2.UnitX,
             moveSpeed: 5f,
             turnSpeedRadiansPerSecond: 100f);
 
@@ -54,6 +55,7 @@ public sealed class WorldMovementTests
             participantSlot: 0,
             playerClass: TestClassDefinition.Create(),
             position: Vector2.Zero,
+            facingDirection: Vector2.UnitX,
             moveSpeed: 5f,
             turnSpeedRadiansPerSecond: 100f);
 
@@ -77,6 +79,7 @@ public sealed class WorldMovementTests
             participantSlot: 0,
             playerClass: TestClassDefinition.Create(),
             position: Vector2.Zero,
+            facingDirection: Vector2.UnitX,
             moveSpeed: 5f,
             turnSpeedRadiansPerSecond: 4f);
 
@@ -114,6 +117,7 @@ public sealed class WorldMovementTests
             participantSlot: 0,
             playerClass: TestClassDefinition.Create(),
             position: Vector2.Zero,
+            facingDirection: Vector2.UnitX,
             turnSpeedRadiansPerSecond: 100f);
 
         world.Movement.SetDirectionIntent(player.Id, Vector2.UnitY);
@@ -139,7 +143,8 @@ public sealed class WorldMovementTests
             "user-1",
             0,
             TestClassDefinition.Create(),
-            new Vector2(1f, 2f));
+            new Vector2(1f, 2f),
+            Vector2.UnitX);
 
         var events = world.Events.Drain();
         Assert.Contains(events, battleEvent => battleEvent is EntitySpawnedEvent spawned
@@ -156,7 +161,8 @@ public sealed class WorldMovementTests
             "user-2",
             1,
             TestClassDefinition.Create(),
-            Vector2.Zero);
+            Vector2.Zero,
+            Vector2.UnitX);
 
         Assert.Same(player, world.Entities.Find<PlayerEntity>(player.Id));
         Assert.True(world.Remove(player.Id));

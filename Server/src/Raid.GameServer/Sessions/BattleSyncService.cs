@@ -4,7 +4,7 @@ using Raid.GameServer.Hubs;
 
 namespace Raid.GameServer.Sessions;
 
-public sealed class BattleSyncService(IHubContext<BattleHub> hubContext)
+public sealed class BattleSyncService(IHubContext<BattleHub> hubContext, ILogger<BattleSyncService> logger)
 {
     public async Task PublishTickAsync(RaidSession session, CancellationToken cancellationToken = default)
     {
@@ -16,6 +16,17 @@ public sealed class BattleSyncService(IHubContext<BattleHub> hubContext)
         {
             return;
         }
+
+        /*logger.LogInformation(
+            "Publishing {EventCount} events for session {SessionId} at tick {Tick}: {Events}",
+            events.Length,
+            session.Id,
+            session.World.Tick,
+            string.Join(", ", events.Select(e => e.Type.ToString())));
+        foreach (var eventDto in events)
+        {
+            logger.LogInformation("Event: {Event}", eventDto);
+        }*/
 
         var message = new BattleTickMessage(
             session.Id,

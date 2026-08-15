@@ -58,7 +58,6 @@ public sealed class MovementSystem(BattleWorld world)
         entity.Position = request.Position;
         entity.DesiredFacingDirection = entity.FacingDirection;
 
-        world.Events.Add(EntityMovedEvent.FromEntity(entity, world.Tick));
         world.Events.Add(PositionSetEvent.FromEntity(entity, world.Tick, request.Reason));
     }
 

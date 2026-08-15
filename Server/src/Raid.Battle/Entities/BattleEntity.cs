@@ -31,6 +31,8 @@ public abstract class BattleEntity(
 
     public float CurrentHealth { get; internal set; } = maxHealth;
 
+    public bool IsDowned { get; internal set; }
+
     public MovementAction? ActiveMovement { get; internal set; }
 
     public ActionComponent Actions { get; } = new();

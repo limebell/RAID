@@ -16,7 +16,7 @@ public sealed class MoveCommand(EntityId issuerId, Vector2 destination) : IWorld
         var player = context.World.Entities.Find<PlayerEntity>(IssuerId);
         if (player is null)
         {
-            return CommandResult.Failure("Player was not found.");
+            return CommandResult.Failure(MoveFailureReason.PlayerNotFound);
         }
 
         if (player.Actions.IsCasting)
@@ -30,7 +30,7 @@ public sealed class MoveCommand(EntityId issuerId, Vector2 destination) : IWorld
         }
         else if (player.Actions.IsBusy)
         {
-            return CommandResult.Failure("Player is already acting.");
+            return CommandResult.Failure(MoveFailureReason.PlayerAlreadyActing);
         }
 
         var desiredFacingDirection = Destination - player.Position;

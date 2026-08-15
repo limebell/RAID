@@ -1,8 +1,10 @@
 using Raid.Battle.Entities;
 using Raid.Battle.Events;
 using Raid.Battle.Snapshots;
+using Raid.Battle.World;
 using Raid.Contracts.Battle.Events;
 using Raid.Contracts.Battle.Snapshots;
+using Raid.Contracts.Session;
 using Raid.Contracts.Common;
 
 namespace Raid.GameServer.Sessions;
@@ -28,6 +30,13 @@ public static class BattleDtoMapper
         return ToEntitySnapshotDto(EntitySnapshot.FromEntity(entity));
     }
 
+    public static PracticeSettingsDto ToPracticeSettingsDto(PracticeSettings settings)
+    {
+        return new PracticeSettingsDto(
+            settings.HighManaRegen,
+            settings.IgnoreCooldowns);
+    }
+
     public static EntitySnapshotDto ToEntitySnapshotDto(EntitySnapshot snapshot)
     {
         return new EntitySnapshotDto(
@@ -37,6 +46,8 @@ public static class BattleDtoMapper
             new Vector2Dto(snapshot.FacingDirection.X, snapshot.FacingDirection.Y),
             snapshot.CurrentHealth,
             snapshot.MaxHealth,
+            snapshot.CurrentMana,
+            snapshot.MaxMana,
             snapshot.IsBusy,
             snapshot.CurrentPhase);
     }
@@ -87,6 +98,21 @@ public static class BattleDtoMapper
                 Type: BattleEventType.EntitySpawned,
                 Tick: spawned.Tick,
                 Entity: ToEntitySnapshotDto(spawned.Entity)),
+            ResourceChangedEvent resourceChanged => new BattleEventDto(
+                Type: BattleEventType.ResourceChanged,
+                Tick: resourceChanged.Tick,
+                Entity: ToEntitySnapshotDto(resourceChanged.Entity)),
+            CooldownStartedEvent cooldownStarted => new BattleEventDto(
+                Type: BattleEventType.CooldownStarted,
+                Tick: cooldownStarted.Tick,
+                Entity: ToEntitySnapshotDto(cooldownStarted.Entity),
+                SkillId: cooldownStarted.SkillId,
+                Amount: cooldownStarted.DurationSeconds),
+            CooldownReadyEvent cooldownReady => new BattleEventDto(
+                Type: BattleEventType.CooldownReady,
+                Tick: cooldownReady.Tick,
+                Entity: ToEntitySnapshotDto(cooldownReady.Entity),
+                SkillId: cooldownReady.SkillId),
             _ => new BattleEventDto(
                 Type: BattleEventType.Unknown,
                 Tick: battleEvent.Tick)

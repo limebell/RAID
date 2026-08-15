@@ -9,5 +9,7 @@ public sealed record EntitySnapshotDto(
     Vector2Dto FacingDirection,
     float CurrentHealth,
     float MaxHealth,
+    float CurrentMana,
+    float MaxMana,
     bool IsBusy,
     string? CurrentPhase);

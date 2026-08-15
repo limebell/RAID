@@ -4,6 +4,8 @@ using Raid.Battle.Commands;
 using Raid.Contracts.Battle;
 using Raid.Contracts.Battle.Commands;
 using Raid.Contracts.Battle.Snapshots;
+using Raid.Contracts.Common;
+using Raid.Contracts.Session;
 using Raid.GameServer.Sessions;
 
 namespace Raid.GameServer.Hubs;
@@ -12,6 +14,8 @@ public sealed class BattleHub(
     RaidSessionRegistry sessions,
     ILogger<BattleHub> logger) : Hub
 {
+    #region Session
+
     public async Task<JoinSessionResponse> JoinSession(JoinSessionRequest request)
     {
         RaidSession session;
@@ -54,6 +58,7 @@ public sealed class BattleHub(
             participant.Slot,
             playerClass.ClassId,
             playerClass.Skills.Select(skill => skill.SkillId).ToArray(),
+            BattleDtoMapper.ToPracticeSettingsDto(session.World.Settings.Practice),
             BattleDtoMapper.ToSnapshot(session));
     }
 
@@ -66,6 +71,28 @@ public sealed class BattleHub(
             session.Id);
         return BattleDtoMapper.ToSnapshot(session);
     }
+
+    public override Task OnDisconnectedAsync(Exception? exception)
+    {
+        if (exception is null)
+        {
+            logger.LogInformation("Connection {ConnectionId} disconnected", Context.ConnectionId);
+        }
+        else
+        {
+            logger.LogWarning(
+                exception,
+                "Connection {ConnectionId} disconnected with error",
+                Context.ConnectionId);
+        }
+
+        sessions.UnbindConnection(Context.ConnectionId);
+        return base.OnDisconnectedAsync(exception);
+    }
+
+    #endregion
+
+    #region Battle Commands
 
     public Task Move(MoveRequest request)
     {
@@ -109,23 +136,43 @@ public sealed class BattleHub(
         return Task.CompletedTask;
     }
 
-    public override Task OnDisconnectedAsync(Exception? exception)
+    #endregion
+
+    #region Practice
+
+    public async Task<PracticeSettingsDto> UpdatePracticeSettings(UpdatePracticeSettingsRequest request)
     {
-        if (exception is null)
+        var session = RequireSession();
+        if (session.Mode != RaidMode.Practice)
         {
-            logger.LogInformation("Connection {ConnectionId} disconnected", Context.ConnectionId);
-        }
-        else
-        {
-            logger.LogWarning(
-                exception,
-                "Connection {ConnectionId} disconnected with error",
-                Context.ConnectionId);
+            throw new HubException("Practice settings can only be changed in Practice mode.");
         }
 
-        sessions.UnbindConnection(Context.ConnectionId);
-        return base.OnDisconnectedAsync(exception);
+        var practice = session.World.Settings.Practice;
+        practice.Apply(request.HighManaRegen, request.IgnoreCooldowns);
+
+        var settingsDto = BattleDtoMapper.ToPracticeSettingsDto(practice);
+        await Clients.Group(session.GroupName).SendAsync(
+            "SessionEvent",
+            new SessionEventMessage(
+                session.Id,
+                session.Mode,
+                new SessionEventDto(
+                    SessionEventType.PracticeSettingsChanged,
+                    PracticeSettings: settingsDto)));
+
+        logger.LogInformation(
+            "Session {SessionId} practice settings updated: highManaRegen={HighManaRegen}, ignoreCooldowns={IgnoreCooldowns}",
+            session.Id,
+            practice.HighManaRegen,
+            practice.IgnoreCooldowns);
+
+        return settingsDto;
     }
+
+    #endregion
+
+    #region Helpers
 
     private RaidSession RequireSession()
     {
@@ -146,4 +193,6 @@ public sealed class BattleHub(
 
         return participant;
     }
+
+    #endregion
 }

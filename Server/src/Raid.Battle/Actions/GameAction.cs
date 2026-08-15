@@ -10,7 +10,9 @@ public sealed class GameAction(
     string skillId,
     IReadOnlyList<IActionPhase> phases,
     EntityId? targetId = null,
-    float damage = 0f)
+    float damage = 0f,
+    int manaCost = 0,
+    int cooldownMilliseconds = 0)
 {
     private readonly IReadOnlyList<IActionPhase> _phases = phases.Count > 0
         ? phases
@@ -27,6 +29,10 @@ public sealed class GameAction(
     public EntityId? TargetId { get; } = targetId;
 
     public float Damage { get; } = damage;
+
+    public int ManaCost { get; } = manaCost;
+
+    public int CooldownMilliseconds { get; } = cooldownMilliseconds;
 
     public ActionEndReason? EndReason { get; private set; }
 

@@ -5,6 +5,8 @@ using Raid.Battle.Commands;
 using Raid.Battle.Entities;
 using Raid.Battle.Events;
 using Raid.Battle.Movement;
+using Raid.Battle.Cooldowns;
+using Raid.Battle.Resources;
 
 namespace Raid.Battle.World;
 
@@ -22,6 +24,8 @@ public sealed class BattleWorld
         Hits = new HitRequestSystem(this);
         Movement = new MovementSystem(this);
         Combat = new DamageSystem(this);
+        Resources = new ResourceSystem(this);
+        Cooldowns = new CooldownSystem(this);
         Loop = new WorldLoop(this, Settings);
     }
 
@@ -43,6 +47,10 @@ public sealed class BattleWorld
 
     public DamageSystem Combat { get; }
 
+    public ResourceSystem Resources { get; }
+
+    public CooldownSystem Cooldowns { get; }
+
     public WorldLoop Loop { get; }
 
     public PlayerEntity CreatePlayer(
@@ -50,9 +58,9 @@ public sealed class BattleWorld
         int participantSlot,
         PlayerClassDefinition playerClass,
         Vector2 position,
+        Vector2 facingDirection,
         float moveSpeed = 6f,
-        float turnSpeedRadiansPerSecond = 12f,
-        float maxHealth = 1000f)
+        float turnSpeedRadiansPerSecond = 12f)
     {
         var entity = new PlayerEntity(
             NextEntityId(),
@@ -60,9 +68,9 @@ public sealed class BattleWorld
             participantSlot,
             playerClass,
             position,
+            facingDirection,
             moveSpeed,
-            turnSpeedRadiansPerSecond,
-            maxHealth);
+            turnSpeedRadiansPerSecond);
         Register(entity);
         return entity;
     }

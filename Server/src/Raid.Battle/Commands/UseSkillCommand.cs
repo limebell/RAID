@@ -21,7 +21,7 @@ public sealed class UseSkillCommand(
         var player = context.World.Entities.Find<PlayerEntity>(IssuerId);
         if (player is null)
         {
-            return CommandResult.Failure("Player was not found.");
+            return CommandResult.Failure(UseSkillFailureReason.PlayerNotFound);
         }
 
         if (player.Actions.IsRecovering)
@@ -32,7 +32,12 @@ public sealed class UseSkillCommand(
 
         if (player.Actions.IsBusy)
         {
-            return CommandResult.Failure("Player is already acting.");
+            return CommandResult.Failure(UseSkillFailureReason.PlayerAlreadyActing);
+        }
+
+        if (!context.World.Cooldowns.CanUseSkill(player, Skill.SkillId))
+        {
+            return CommandResult.Failure(UseSkillFailureReason.SkillOnCooldown);
         }
 
         var validation = ValidateTarget(context, player);
@@ -50,7 +55,7 @@ public sealed class UseSkillCommand(
 
         return context.World.Actions.TryStart(player, action)
             ? CommandResult.Success()
-            : CommandResult.Failure("Failed to start skill action.");
+            : CommandResult.Failure(UseSkillFailureReason.FailedToStartSkillAction);
     }
 
     private CommandResult ValidateTarget(CommandContext context, PlayerEntity player)
@@ -59,17 +64,17 @@ public sealed class UseSkillCommand(
         {
             return Target is null || Target.Mode == SkillTargetingMode.None
                 ? CommandResult.Success()
-                : CommandResult.Failure("This skill does not accept a target.");
+                : CommandResult.Failure(UseSkillFailureReason.SkillDoesNotAcceptTarget);
         }
 
         if (Target is null)
         {
-            return CommandResult.Failure("Skill target is required.");
+            return CommandResult.Failure(UseSkillFailureReason.SkillTargetRequired);
         }
 
         if (Target.Mode != Skill.TargetingMode)
         {
-            return CommandResult.Failure("Skill target mode does not match the skill definition.");
+            return CommandResult.Failure(UseSkillFailureReason.SkillTargetModeMismatch);
         }
 
         return Target.Mode switch
@@ -77,7 +82,7 @@ public sealed class UseSkillCommand(
             SkillTargetingMode.Entity => ValidateEntityTarget(context, player),
             SkillTargetingMode.Point => ValidatePointTarget(player),
             SkillTargetingMode.Direction => ValidateDirectionTarget(),
-            _ => CommandResult.Failure("Unsupported targeting mode.")
+            _ => CommandResult.Failure(UseSkillFailureReason.UnsupportedTargetingMode)
         };
     }
 
@@ -85,19 +90,19 @@ public sealed class UseSkillCommand(
     {
         if (Target!.EntityId is null)
         {
-            return CommandResult.Failure("Target entity id is required.");
+            return CommandResult.Failure(UseSkillFailureReason.TargetEntityIdRequired);
         }
 
         var entity = context.World.Entities.Find(Target.EntityId.Value);
         if (entity is null)
         {
-            return CommandResult.Failure("Target was not found.");
+            return CommandResult.Failure(UseSkillFailureReason.TargetNotFound);
         }
 
         var distance = Vector2.Distance(player.Position, entity.Position);
         if (distance > Skill.Range)
         {
-            return CommandResult.Failure("Target is out of range.");
+            return CommandResult.Failure(UseSkillFailureReason.TargetOutOfRange);
         }
 
         return CommandResult.Success();
@@ -107,13 +112,13 @@ public sealed class UseSkillCommand(
     {
         if (Target!.Position is null)
         {
-            return CommandResult.Failure("Target position is required.");
+            return CommandResult.Failure(UseSkillFailureReason.TargetPositionRequired);
         }
 
         var distance = Vector2.Distance(player.Position, Target.Position.Value);
         if (distance > Skill.Range)
         {
-            return CommandResult.Failure("Target point is out of range.");
+            return CommandResult.Failure(UseSkillFailureReason.TargetPointOutOfRange);
         }
 
         return CommandResult.Success();
@@ -123,12 +128,12 @@ public sealed class UseSkillCommand(
     {
         if (Target!.Direction is null)
         {
-            return CommandResult.Failure("Target direction is required.");
+            return CommandResult.Failure(UseSkillFailureReason.TargetDirectionRequired);
         }
 
         if (Target.Direction.Value == Vector2.Zero)
         {
-            return CommandResult.Failure("Target direction must be non-zero.");
+            return CommandResult.Failure(UseSkillFailureReason.TargetDirectionMustBeNonZero);
         }
 
         return CommandResult.Success();

@@ -13,12 +13,12 @@ public sealed class RaidSessionRegistry(IOptions<SimulationOptions> simulationOp
 
     public RaidSession Create(RaidMode mode)
     {
-        var setup = BattleWorldFactory.Create(
-            mode,
-            new WorldSettings
-            {
-                FixedDeltaMilliseconds = simulationOptions.Value.FixedDeltaMilliseconds
-            });
+        var settings = new WorldSettings
+        {
+            FixedDeltaMilliseconds = simulationOptions.Value.FixedDeltaMilliseconds
+        };
+
+        var setup = BattleWorldFactory.Create(mode, settings);
         var session = new RaidSession(Guid.NewGuid(), setup);
         _sessions[session.Id] = session;
         return session;

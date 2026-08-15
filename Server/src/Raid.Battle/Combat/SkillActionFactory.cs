@@ -45,6 +45,8 @@ public static class SkillActionFactory
             skill.SkillId,
             phases,
             target.EntityId,
-            skill.Damage);
+            skill.Damage,
+            skill.ManaCost,
+            skill.CooldownMilliseconds);
     }
 }

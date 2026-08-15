@@ -8,6 +8,8 @@ public sealed record SkillDefinition(
     SkillTargetingMode TargetingMode,
     float Range,
     float Damage,
+    int ManaCost,
+    int CooldownMilliseconds,
     int CastTimeMilliseconds,
     int WindupTimeMilliseconds,
     int RecoveryTimeMilliseconds,

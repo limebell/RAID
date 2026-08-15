@@ -6,6 +6,8 @@ public sealed class WorldLoop(BattleWorld world, WorldSettings settings)
     {
         var deltaTime = settings.FixedDeltaTimeSeconds;
 
+        world.Resources.Update(deltaTime);
+        world.Cooldowns.Update(deltaTime);
         world.Commands.ProcessQueuedCommands();
         world.Actions.Update(deltaTime);
         world.Hits.ProcessPending();

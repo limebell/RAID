@@ -26,17 +26,22 @@ public static class BattleWorldFactory
         string userId,
         int participantSlot,
         PlayerClassDefinition? playerClass = null,
-        Vector2? position = null)
+        Vector2? position = null,
+        Vector2? facingDirection = null)
     {
         ArgumentNullException.ThrowIfNull(world);
 
         var selectedClass = playerClass ?? TestClassDefinition.Create();
         var spawnPosition = position ?? new Vector2(participantSlot * 2f, 0f);
+        var spawnFacingDirection = facingDirection ?? Vector2.UnitY;
         var player = world.CreatePlayer(
             userId,
             participantSlot,
             selectedClass,
-            spawnPosition);
+            spawnPosition,
+            spawnFacingDirection,
+            moveSpeed: 6f,
+            turnSpeedRadiansPerSecond: 12f);
 
         world.Movement.SetPosition(new PositionSetRequest(
             player.Id,
