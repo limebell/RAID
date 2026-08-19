@@ -10,6 +10,6 @@ public sealed record JoinSessionResponse(
     long PlayerEntityId,
     int ParticipantSlot,
     string ClassId,
-    IReadOnlyList<string> SkillIds,
+    IReadOnlyList<SkillInfoDto> Skills,
     PracticeSettingsDto PracticeSettings,
     BattleSnapshotDto Snapshot);

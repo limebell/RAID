@@ -57,7 +57,12 @@ public sealed class BattleHub(
             participant.Player.Id.Value,
             participant.Slot,
             playerClass.ClassId,
-            playerClass.Skills.Select(skill => skill.SkillId).ToArray(),
+            playerClass.Skills
+                .Select(skill => new SkillInfoDto(
+                    skill.SkillId,
+                    skill.TargetingMode,
+                    skill.ManaCost))
+                .ToArray(),
             BattleDtoMapper.ToPracticeSettingsDto(session.World.Settings.Practice),
             BattleDtoMapper.ToSnapshot(session));
     }
