@@ -41,7 +41,7 @@ public static class BattleWorldFactory
             spawnPosition,
             spawnFacingDirection,
             moveSpeed: 6f,
-            turnSpeedRadiansPerSecond: 12f);
+            turnSpeedRadiansPerSecond: 36f);
 
         world.Movement.SetPosition(new PositionSetRequest(
             player.Id,

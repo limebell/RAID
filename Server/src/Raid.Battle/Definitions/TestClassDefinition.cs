@@ -18,24 +18,39 @@ public static class TestClassDefinition
         Kind: SkillKind.Instant,
         TargetingMode: SkillTargetingMode.Entity,
         Range: 8f,
+        Width: 0f,
         Damage: 100f,
-        ManaCost: 50,
-        CooldownMilliseconds: 3000,
+        ManaCost: 60,
+        CooldownMilliseconds: 8000,
         CastTimeMilliseconds: 0,
-        WindupTimeMilliseconds: 0,
+        WindupTimeMilliseconds: 100,
         RecoveryTimeMilliseconds: 300);
 
-    public static readonly SkillDefinition ChargedStrike = new(
-        SkillId: "test.charged_strike",
+    public static readonly SkillDefinition MeteorStrike = new(
+        SkillId: "test.meteor_strike",
         Kind: SkillKind.Cast,
-        TargetingMode: SkillTargetingMode.Entity,
+        TargetingMode: SkillTargetingMode.Point,
         Range: 10f,
+        Width: 3f,
         Damage: 250f,
         ManaCost: 120,
-        CooldownMilliseconds: 8000,
+        CooldownMilliseconds: 16000,
         CastTimeMilliseconds: 1000,
         WindupTimeMilliseconds: 1000,
         RecoveryTimeMilliseconds: 500);
+
+    public static readonly SkillDefinition ArrowStrike = new(
+        SkillId: "test.arrow_strike",
+        Kind: SkillKind.Instant,
+        TargetingMode: SkillTargetingMode.Direction,
+        Range: 14f,
+        Width: 2f,
+        Damage: 100f,
+        ManaCost: 40,
+        CooldownMilliseconds: 5000,
+        CastTimeMilliseconds: 0,
+        WindupTimeMilliseconds: 300,
+        RecoveryTimeMilliseconds: 200);
 
     public static PlayerClassDefinition Create()
     {
@@ -45,9 +60,8 @@ public static class TestClassDefinition
             skills:
             [
                 InstantStrike,
-                ChargedStrike
-                // 이후 스킬 타입이 추가되면 타입별 대표 스킬을 여기에 추가한다.
-                // 예: Channel, Sustained, Point, Direction
+                MeteorStrike,
+                ArrowStrike,
             ],
             maxHealth: MaxHealth,
             maxMana: MaxMana,

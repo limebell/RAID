@@ -61,7 +61,9 @@ public sealed class BattleHub(
                 .Select(skill => new SkillInfoDto(
                     skill.SkillId,
                     skill.TargetingMode,
-                    skill.ManaCost))
+                    skill.ManaCost,
+                    skill.Range,
+                    skill.Width))
                 .ToArray(),
             BattleDtoMapper.ToPracticeSettingsDto(session.World.Settings.Practice),
             BattleDtoMapper.ToSnapshot(session));
