@@ -27,6 +27,15 @@ public sealed class MovementSystem(BattleWorld world)
             intent.FacingPolicy);
     }
 
+    public void ClearIntent(EntityId entityId)
+    {
+        var entity = world.Entities.Find(entityId)
+            ?? throw new InvalidOperationException($"Entity '{entityId}' was not found.");
+
+        entity.ActiveMovement = null;
+        entity.DesiredFacingDirection = entity.FacingDirection;
+    }
+
     public void SetDirectionIntent(
         EntityId entityId,
         Vector2 desiredFacingDirection,

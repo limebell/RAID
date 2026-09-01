@@ -119,6 +119,22 @@ public sealed class BattleHub(
         return Task.CompletedTask;
     }
 
+    public Task StopMoving(StopMovingRequest request)
+    {
+        var session = RequireSession();
+        var participant = RequireParticipant(session);
+
+        logger.LogTrace(
+            "StopMoving session {SessionId} player {PlayerEntityId} seq {ClientSequence}",
+            session.Id,
+            participant.Player.Id.Value,
+            request.ClientSequence);
+
+        session.World.Commands.Enqueue(
+            new StopMovingCommand(participant.Player.Id));
+        return Task.CompletedTask;
+    }
+
     public Task UseSkill(UseSkillRequest request)
     {
         var session = RequireSession();

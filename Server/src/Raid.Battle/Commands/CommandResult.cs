@@ -3,7 +3,8 @@ namespace Raid.Battle.Commands;
 public readonly record struct CommandResult(
     bool Succeeded,
     UseSkillFailureReason? UseSkillFailure = null,
-    MoveFailureReason? MoveFailure = null)
+    MoveFailureReason? MoveFailure = null,
+    StopMovingFailureReason? StopMovingFailure = null)
 {
     public static CommandResult Success()
     {
@@ -18,5 +19,10 @@ public readonly record struct CommandResult(
     public static CommandResult Failure(MoveFailureReason reason)
     {
         return new(false, MoveFailure: reason);
+    }
+
+    public static CommandResult Failure(StopMovingFailureReason reason)
+    {
+        return new(false, StopMovingFailure: reason);
     }
 }

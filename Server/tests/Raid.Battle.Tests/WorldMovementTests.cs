@@ -44,6 +44,40 @@ public sealed class WorldMovementTests
     }
 
     [Fact]
+    public void StopMovingCommand_ClearsActiveMovement_AndStopsAtCurrentPosition()
+    {
+        var world = new BattleWorld(new WorldSettings
+        {
+            FixedDeltaMilliseconds = 100
+        });
+
+        var player = world.CreatePlayer(
+            userId: "user-1",
+            participantSlot: 0,
+            playerClass: TestClassDefinition.Create(),
+            position: Vector2.Zero,
+            facingDirection: Vector2.UnitX,
+            moveSpeed: 5f,
+            turnSpeedRadiansPerSecond: 100f);
+
+        world.Commands.Enqueue(new MoveCommand(player.Id, new Vector2(10f, 0f)));
+        world.Loop.Tick();
+
+        Assert.NotNull(player.ActiveMovement);
+        Assert.NotEqual(Vector2.Zero, player.Position);
+
+        world.Commands.Enqueue(new StopMovingCommand(player.Id));
+        world.Loop.Tick();
+
+        var stoppedPosition = player.Position;
+        Assert.Null(player.ActiveMovement);
+
+        world.Loop.Tick();
+        Assert.Equal(stoppedPosition, player.Position);
+        Assert.Null(player.ActiveMovement);
+    }
+
+    [Fact]
     public void MoveCommand_UpdatesFacingDirection_FromMovementVector()
     {
         var world = new BattleWorld(new WorldSettings
