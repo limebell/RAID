@@ -106,7 +106,7 @@ public sealed class BattleHub(
         var session = RequireSession();
         var participant = RequireParticipant(session);
 
-        logger.LogDebug(
+        logger.LogTrace(
             "Move session {SessionId} player {PlayerEntityId} seq {ClientSequence} -> ({X}, {Y})",
             session.Id,
             participant.Player.Id.Value,

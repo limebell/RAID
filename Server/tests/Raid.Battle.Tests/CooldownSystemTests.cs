@@ -21,7 +21,11 @@ public sealed class CooldownSystemTests
             player.Id,
             skill,
             new SkillTarget(SkillTargetingMode.Entity, EntityId: dummy.Id)));
-        world.Loop.Tick();
+
+        for (var i = 0; i < 2; i++)
+        {
+            world.Loop.Tick();
+        }
 
         Assert.True(player.SkillCooldownRemainingSeconds.ContainsKey(skill.SkillId));
 
@@ -65,9 +69,9 @@ public sealed class CooldownSystemTests
         {
             FixedDeltaMilliseconds = 100
         });
-        var skill = TestClassDefinition.ChargedStrike;
+        var skill = TestClassDefinition.MeteorStrike;
         var dummy = world.Entities.Dummies().Single();
-        var target = new SkillTarget(SkillTargetingMode.Entity, EntityId: dummy.Id);
+        var target = PointTargetAt(dummy);
 
         world.Commands.Enqueue(new UseSkillCommand(player.Id, skill, target));
         world.Loop.Tick();
@@ -139,6 +143,9 @@ public sealed class CooldownSystemTests
         Assert.Contains(events, battleEvent => battleEvent is CooldownReadyEvent ready
             && ready.SkillId == skill.SkillId);
     }
+
+    private static SkillTarget PointTargetAt(BattleEntity target) =>
+        new(SkillTargetingMode.Point, Position: target.Position);
 
     private static (BattleWorld World, PlayerEntity Player) CreatePracticeWithPlayer(
         WorldSettings? settings = null)

@@ -1,6 +1,7 @@
 using System.Numerics;
 using Raid.Battle.Actions;
 using Raid.Battle.Movement;
+using Raid.Contracts.Common;
 
 namespace Raid.Battle.Entities;
 

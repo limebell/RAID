@@ -5,7 +5,7 @@ namespace Raid.Battle.Tests;
 public sealed class PracticeSettingsTests
 {
     [Fact]
-    public void Apply_UpdatesOnlyProvidedFields()
+    public void Apply_ReplacesAllFields()
     {
         var settings = new PracticeSettings
         {
@@ -16,6 +16,6 @@ public sealed class PracticeSettingsTests
         settings.Apply(highManaRegen: false, ignoreCooldowns: true);
 
         Assert.False(settings.HighManaRegen);
-        Assert.False(settings.IgnoreCooldowns);
+        Assert.True(settings.IgnoreCooldowns);
     }
 }

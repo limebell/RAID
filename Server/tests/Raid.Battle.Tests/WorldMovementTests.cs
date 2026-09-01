@@ -5,6 +5,7 @@ using Raid.Battle.Entities;
 using Raid.Battle.Events;
 using Raid.Battle.Movement;
 using Raid.Battle.World;
+using Raid.Contracts.Common;
 
 namespace Raid.Battle.Tests;
 

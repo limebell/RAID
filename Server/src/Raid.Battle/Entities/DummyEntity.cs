@@ -1,4 +1,5 @@
 using System.Numerics;
+using Raid.Contracts.Common;
 
 namespace Raid.Battle.Entities;
 

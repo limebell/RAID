@@ -4,7 +4,7 @@ namespace Raid.Contracts.Battle.Snapshots;
 
 public sealed record EntitySnapshotDto(
     long EntityId,
-    string Kind,
+    EntityKind Kind,
     Vector2Dto Position,
     Vector2Dto FacingDirection,
     float CurrentHealth,

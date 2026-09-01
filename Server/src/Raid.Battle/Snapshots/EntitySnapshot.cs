@@ -1,5 +1,6 @@
 using System.Numerics;
 using Raid.Battle.Entities;
+using Raid.Contracts.Common;
 
 namespace Raid.Battle.Snapshots;
 

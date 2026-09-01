@@ -1,4 +1,4 @@
-namespace Raid.Battle.Entities;
+namespace Raid.Contracts.Common;
 
 public enum EntityKind
 {

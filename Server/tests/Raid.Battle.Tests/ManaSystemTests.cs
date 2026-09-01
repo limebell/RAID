@@ -69,14 +69,14 @@ public sealed class ManaSystemTests
         var setup = BattleWorldFactory.Create(RaidMode.Practice, settings);
         var world = setup.World;
         var player = BattleWorldFactory.SpawnPlayer(world, "player-1", participantSlot: 0);
-        var skill = TestClassDefinition.ChargedStrike;
+        var skill = TestClassDefinition.MeteorStrike;
         var dummy = world.Entities.Dummies().Single();
 
         player.CurrentMana = 0f;
         world.Commands.Enqueue(new UseSkillCommand(
             player.Id,
             skill,
-            new SkillTarget(SkillTargetingMode.Entity, EntityId: dummy.Id)));
+            new SkillTarget(SkillTargetingMode.Point, Position: dummy.Position)));
 
         world.Loop.Tick();
         Assert.True(player.Actions.IsCasting);

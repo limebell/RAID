@@ -29,7 +29,10 @@ public sealed class PracticeModeTests
                 Mode: SkillTargetingMode.Entity,
                 EntityId: dummy.Id)));
 
-        world.Loop.Tick();
+        for (var i = 0; i < 2; i++)
+        {
+            world.Loop.Tick();
+        }
 
         Assert.Equal(healthBefore - skill.Damage, dummy.CurrentHealth);
 
@@ -47,15 +50,13 @@ public sealed class PracticeModeTests
             FixedDeltaMilliseconds = 500
         });
 
-        var skill = TestClassDefinition.ChargedStrike;
+        var skill = TestClassDefinition.MeteorStrike;
         var dummy = world.Entities.Dummies().Single();
         var healthBefore = dummy.CurrentHealth;
         world.Commands.Enqueue(new UseSkillCommand(
             player.Id,
             skill,
-            new SkillTarget(
-                Mode: SkillTargetingMode.Entity,
-                EntityId: dummy.Id)));
+            PointTargetAt(dummy)));
 
         world.Loop.Tick();
         Assert.Equal(healthBefore, dummy.CurrentHealth);
@@ -66,7 +67,8 @@ public sealed class PracticeModeTests
         Assert.Equal(Raid.Battle.Actions.ActionPhaseKind.Windup, player.Actions.CurrentAction?.CurrentPhaseKind);
 
         world.Loop.Tick();
-        Assert.Equal(healthBefore - skill.Damage, dummy.CurrentHealth);
+        Assert.Equal(healthBefore, dummy.CurrentHealth);
+        Assert.False(player.Actions.IsCasting);
     }
 
     [Fact]
@@ -77,15 +79,13 @@ public sealed class PracticeModeTests
             FixedDeltaMilliseconds = 100
         });
 
-        var skill = TestClassDefinition.ChargedStrike;
+        var skill = TestClassDefinition.MeteorStrike;
         var dummy = world.Entities.Dummies().Single();
         var healthBefore = dummy.CurrentHealth;
         world.Commands.Enqueue(new UseSkillCommand(
             player.Id,
             skill,
-            new SkillTarget(
-                Mode: SkillTargetingMode.Entity,
-                EntityId: dummy.Id)));
+            PointTargetAt(dummy)));
         world.Loop.Tick();
 
         world.Commands.Enqueue(new MoveCommand(player.Id, new Vector2(1f, 0f)));
@@ -107,16 +107,14 @@ public sealed class PracticeModeTests
             FixedDeltaMilliseconds = 500
         });
 
-        var skill = TestClassDefinition.ChargedStrike;
+        var skill = TestClassDefinition.MeteorStrike;
         var dummy = world.Entities.Dummies().Single();
         var healthBefore = dummy.CurrentHealth;
         var startPosition = player.Position;
         world.Commands.Enqueue(new UseSkillCommand(
             player.Id,
             skill,
-            new SkillTarget(
-                Mode: SkillTargetingMode.Entity,
-                EntityId: dummy.Id)));
+            PointTargetAt(dummy)));
 
         world.Loop.Tick();
         world.Loop.Tick();
@@ -125,8 +123,9 @@ public sealed class PracticeModeTests
         world.Commands.Enqueue(new MoveCommand(player.Id, new Vector2(1f, 0f)));
         world.Loop.Tick();
 
-        Assert.Equal(healthBefore - skill.Damage, dummy.CurrentHealth);
+        Assert.Equal(healthBefore, dummy.CurrentHealth);
         Assert.Equal(startPosition, player.Position);
+        Assert.False(player.Actions.IsCasting);
     }
 
     [Fact]
@@ -154,7 +153,8 @@ public sealed class PracticeModeTests
         Assert.Equal(RaidMode.Practice, setup.Mode);
         Assert.Equal(TestClassDefinition.ClassId, player.Class.ClassId);
         Assert.NotNull(player.FindSkill(TestClassDefinition.InstantStrike.SkillId));
-        Assert.NotNull(player.FindSkill(TestClassDefinition.ChargedStrike.SkillId));
+        Assert.NotNull(player.FindSkill(TestClassDefinition.MeteorStrike.SkillId));
+        Assert.NotNull(player.FindSkill(TestClassDefinition.ArrowStrike.SkillId));
     }
 
     [Fact]
@@ -168,6 +168,9 @@ public sealed class PracticeModeTests
         Assert.NotEqual(first.Id, second.Id);
         Assert.NotEqual(first.Position, second.Position);
     }
+
+    private static SkillTarget PointTargetAt(BattleEntity target) =>
+        new(SkillTargetingMode.Point, Position: target.Position);
 
     private static (BattleWorld World, PlayerEntity Player) CreatePracticeWithPlayer(
         WorldSettings? settings = null)
