@@ -32,8 +32,14 @@ public sealed class MovementSystem(BattleWorld world)
         var entity = world.Entities.Find(entityId)
             ?? throw new InvalidOperationException($"Entity '{entityId}' was not found.");
 
+        var activeMovement = entity.ActiveMovement;
         entity.ActiveMovement = null;
         entity.DesiredFacingDirection = entity.FacingDirection;
+
+        if (activeMovement is not null && !IsTurnOnly(activeMovement))
+        {
+            world.Events.Add(EntityMoveCompletedEvent.FromEntity(entity, world.Tick));
+        }
     }
 
     public void SetDirectionIntent(

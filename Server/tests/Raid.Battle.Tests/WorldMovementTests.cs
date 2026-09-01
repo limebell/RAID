@@ -72,6 +72,11 @@ public sealed class WorldMovementTests
         var stoppedPosition = player.Position;
         Assert.Null(player.ActiveMovement);
 
+        var events = world.Events.Drain();
+        Assert.Contains(events, battleEvent => battleEvent is EntityMoveCompletedEvent completed
+            && completed.Entity.EntityId == player.Id
+            && completed.Entity.Position == stoppedPosition);
+
         world.Loop.Tick();
         Assert.Equal(stoppedPosition, player.Position);
         Assert.Null(player.ActiveMovement);
