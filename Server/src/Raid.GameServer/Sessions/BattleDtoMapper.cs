@@ -42,6 +42,7 @@ public static class BattleDtoMapper
         return new EntitySnapshotDto(
             snapshot.EntityId.Value,
             snapshot.Kind,
+            snapshot.DefinitionId,
             new Vector2Dto(snapshot.Position.X, snapshot.Position.Y),
             new Vector2Dto(snapshot.FacingDirection.X, snapshot.FacingDirection.Y),
             snapshot.CurrentHealth,

@@ -18,6 +18,8 @@ public abstract class BattleEntity(
 
     public EntityKind Kind { get; } = kind;
 
+    public abstract string DefinitionId { get; }
+
     public Vector2 Position { get; internal set; } = position;
 
     public Vector2 FacingDirection { get; internal set; } = facingDirection;

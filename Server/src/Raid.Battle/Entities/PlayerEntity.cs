@@ -28,6 +28,8 @@ public sealed class PlayerEntity(
 
     public PlayerClassDefinition Class { get; } = playerClass;
 
+    public override string DefinitionId => Class.ClassId;
+
     public float MaxMana { get; } = playerClass.MaxMana;
 
     public float CurrentMana { get; internal set; } = playerClass.MaxMana;

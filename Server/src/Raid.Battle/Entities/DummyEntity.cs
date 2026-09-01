@@ -1,4 +1,5 @@
 using System.Numerics;
+using Raid.Battle.Definitions;
 using Raid.Contracts.Common;
 
 namespace Raid.Battle.Entities;
@@ -8,7 +9,8 @@ public sealed class DummyEntity(
     Vector2 position,
     float moveSpeed = 0f,
     float turnSpeedRadiansPerSecond = 6f,
-    float maxHealth = 100_000f)
+    float maxHealth = 100_000f,
+    string definitionId = PracticeDummyDefinition.DefinitionId)
     : BattleEntity(
         id,
         EntityKind.Dummy,
@@ -16,4 +18,7 @@ public sealed class DummyEntity(
         Vector2.UnitX,
         moveSpeed,
         turnSpeedRadiansPerSecond,
-        maxHealth);
+        maxHealth)
+{
+    public override string DefinitionId { get; } = definitionId;
+}

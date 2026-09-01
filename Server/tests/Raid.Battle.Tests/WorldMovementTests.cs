@@ -151,6 +151,7 @@ public sealed class WorldMovementTests
         Assert.Contains(events, battleEvent => battleEvent is EntitySpawnedEvent spawned
             && spawned.Entity.EntityId == player.Id
             && spawned.Entity.Kind == EntityKind.Player
+            && spawned.Entity.DefinitionId == TestClassDefinition.ClassId
             && spawned.Entity.Position == new Vector2(1f, 2f));
     }
 

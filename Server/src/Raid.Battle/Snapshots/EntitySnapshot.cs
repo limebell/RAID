@@ -7,6 +7,7 @@ namespace Raid.Battle.Snapshots;
 public sealed record EntitySnapshot(
     EntityId EntityId,
     EntityKind Kind,
+    string DefinitionId,
     Vector2 Position,
     Vector2 FacingDirection,
     float CurrentHealth,
@@ -27,6 +28,7 @@ public sealed record EntitySnapshot(
         return new EntitySnapshot(
             entity.Id,
             entity.Kind,
+            entity.DefinitionId,
             entity.Position,
             entity.FacingDirection,
             entity.CurrentHealth,
