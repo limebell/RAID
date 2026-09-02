@@ -18,11 +18,17 @@ public sealed class BattleHub(
 
     public async Task<JoinSessionResponse> JoinSession(JoinSessionRequest request)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.UserId);
+
         RaidSession session;
         if (request.SessionId is Guid sessionId)
         {
             session = sessions.Find(sessionId)
                 ?? throw new HubException($"Session '{sessionId}' was not found.");
+            if (session.IsClosed)
+            {
+                throw new HubException($"Session '{sessionId}' is closed.");
+            }
         }
         else
         {
@@ -33,19 +39,32 @@ public sealed class BattleHub(
 
             session = sessions.Create(request.Mode);
             logger.LogInformation(
-                "Created session {SessionId} mode {Mode} for connection {ConnectionId}",
+                "Created session {SessionId} mode {Mode} for user {UserId}",
                 session.Id,
                 session.Mode,
-                Context.ConnectionId);
+                request.UserId);
         }
 
-        var participant = session.Join(Context.ConnectionId);
-        sessions.BindConnection(Context.ConnectionId, session.Id);
+        SessionParticipant participant;
+        try
+        {
+            participant = session.Join(request.UserId);
+        }
+        catch (InvalidOperationException) when (session.IsClosed)
+        {
+            throw new HubException($"Session '{session.Id}' is closed.");
+        }
+        catch (InvalidOperationException exception)
+        {
+            throw new HubException(exception.Message);
+        }
+
+        sessions.Bind(Context.ConnectionId, request.UserId, session.Id);
         await Groups.AddToGroupAsync(Context.ConnectionId, session.GroupName);
 
         logger.LogInformation(
-            "Connection {ConnectionId} joined session {SessionId} as player {PlayerEntityId} slot {Slot}",
-            Context.ConnectionId,
+            "User {UserId} joined session {SessionId} as player {PlayerEntityId} slot {Slot}",
+            request.UserId,
             session.Id,
             participant.Player.Id.Value,
             participant.Slot);
@@ -71,7 +90,7 @@ public sealed class BattleHub(
 
     public BattleSnapshotDto RequestSnapshot()
     {
-        var session = RequireSession();
+        var (session, _) = RequireCaller();
         logger.LogDebug(
             "Snapshot requested by connection {ConnectionId} session {SessionId}",
             Context.ConnectionId,
@@ -103,8 +122,7 @@ public sealed class BattleHub(
 
     public Task Move(MoveRequest request)
     {
-        var session = RequireSession();
-        var participant = RequireParticipant(session);
+        var (session, participant) = RequireCaller();
 
         logger.LogTrace(
             "Move session {SessionId} player {PlayerEntityId} seq {ClientSequence} -> ({X}, {Y})",
@@ -121,8 +139,7 @@ public sealed class BattleHub(
 
     public Task StopMoving(StopMovingRequest request)
     {
-        var session = RequireSession();
-        var participant = RequireParticipant(session);
+        var (session, participant) = RequireCaller();
 
         logger.LogTrace(
             "StopMoving session {SessionId} player {PlayerEntityId} seq {ClientSequence}",
@@ -137,8 +154,7 @@ public sealed class BattleHub(
 
     public Task UseSkill(UseSkillRequest request)
     {
-        var session = RequireSession();
-        var participant = RequireParticipant(session);
+        var (session, participant) = RequireCaller();
         var skill = participant.Player.FindSkill(request.SkillId)
             ?? throw new HubException($"Unknown skill '{request.SkillId}'.");
 
@@ -165,7 +181,7 @@ public sealed class BattleHub(
 
     public async Task<PracticeSettingsDto> UpdatePracticeSettings(UpdatePracticeSettingsRequest request)
     {
-        var session = RequireSession();
+        var (session, _) = RequireCaller();
         if (session.Mode != RaidMode.Practice)
         {
             throw new HubException("Practice settings can only be changed in Practice mode.");
@@ -197,24 +213,28 @@ public sealed class BattleHub(
 
     #region Helpers
 
-    private RaidSession RequireSession()
+    private (RaidSession Session, SessionParticipant Participant) RequireCaller()
     {
-        if (!sessions.TryGetSessionByConnection(Context.ConnectionId, out var session) || session is null)
+        if (!sessions.TryGetByConnection(Context.ConnectionId, out var session, out var userId)
+            || session is null
+            || userId is null)
         {
             throw new HubException("Join a session before sending commands.");
         }
 
-        return session;
-    }
+        if (session.IsClosed)
+        {
+            throw new HubException($"Session '{session.Id}' is closed.");
+        }
 
-    private SessionParticipant RequireParticipant(RaidSession session)
-    {
-        if (!session.TryGetByConnection(Context.ConnectionId, out var participant) || participant is null)
+        if (!session.TryGetByUserId(userId, out var participant)
+            || participant is null
+            || !participant.IsConnected)
         {
             throw new HubException("Join a session before sending commands.");
         }
 
-        return participant;
+        return (session, participant);
     }
 
     #endregion

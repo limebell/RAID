@@ -3,28 +3,25 @@ using Raid.Battle.Entities;
 namespace Raid.GameServer.Sessions;
 
 public sealed class SessionParticipant(
-    string connectionId,
     string userId,
     int slot,
     PlayerEntity player)
 {
-    public string? ConnectionId { get; private set; } = connectionId;
-
     public string UserId { get; } = userId;
 
     public int Slot { get; } = slot;
 
     public PlayerEntity Player { get; } = player;
 
-    public bool IsConnected => ConnectionId is not null;
+    public bool IsConnected { get; private set; } = true;
 
-    public void BindConnection(string connectionId)
+    public void Connect()
     {
-        ConnectionId = connectionId;
+        IsConnected = true;
     }
 
-    public void UnbindConnection()
+    public void Disconnect()
     {
-        ConnectionId = null;
+        IsConnected = false;
     }
 }

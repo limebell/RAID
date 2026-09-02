@@ -6,10 +6,14 @@ using Raid.GameServer.Options;
 
 namespace Raid.GameServer.Sessions;
 
-public sealed class RaidSessionRegistry(IOptions<SimulationOptions> simulationOptions)
+public sealed class RaidSessionRegistry(
+    IOptions<SimulationOptions> simulationOptions,
+    ILogger<RaidSessionRegistry> logger)
 {
     private readonly ConcurrentDictionary<Guid, RaidSession> _sessions = [];
-    private readonly ConcurrentDictionary<string, Guid> _connectionSessions = [];
+    private readonly ConcurrentDictionary<string, Guid> _userSessions = [];
+    private readonly ConcurrentDictionary<string, string> _connectionUsers = [];
+    private readonly ConcurrentDictionary<string, string> _userConnections = [];
 
     public RaidSession Create(RaidMode mode)
     {
@@ -31,7 +35,7 @@ public sealed class RaidSessionRegistry(IOptions<SimulationOptions> simulationOp
 
     public IReadOnlyCollection<RaidSession> All()
     {
-        return _sessions.Values.ToArray();
+        return _sessions.Values.Where(session => !session.IsClosed).ToArray();
     }
 
     public bool Remove(Guid sessionId)
@@ -39,15 +43,25 @@ public sealed class RaidSessionRegistry(IOptions<SimulationOptions> simulationOp
         return _sessions.TryRemove(sessionId, out _);
     }
 
-    public void BindConnection(string connectionId, Guid sessionId)
+    public void Bind(string connectionId, string userId, Guid sessionId)
     {
-        _connectionSessions[connectionId] = sessionId;
+        if (_userConnections.TryGetValue(userId, out var previousConnectionId)
+            && previousConnectionId != connectionId)
+        {
+            _connectionUsers.TryRemove(previousConnectionId, out _);
+        }
+
+        _connectionUsers[connectionId] = userId;
+        _userConnections[userId] = connectionId;
+        _userSessions[userId] = sessionId;
     }
 
-    public bool TryGetSessionByConnection(string connectionId, out RaidSession? session)
+    public bool TryGetByConnection(string connectionId, out RaidSession? session, out string? userId)
     {
         session = null;
-        if (!_connectionSessions.TryGetValue(connectionId, out var sessionId))
+        userId = null;
+        if (!_connectionUsers.TryGetValue(connectionId, out userId)
+            || !_userSessions.TryGetValue(userId, out var sessionId))
         {
             return false;
         }
@@ -58,10 +72,29 @@ public sealed class RaidSessionRegistry(IOptions<SimulationOptions> simulationOp
 
     public void UnbindConnection(string connectionId)
     {
-        if (_connectionSessions.TryRemove(connectionId, out var sessionId)
-            && _sessions.TryGetValue(sessionId, out var session))
+        if (!_connectionUsers.TryRemove(connectionId, out var userId))
         {
-            session.UnbindConnection(connectionId);
+            return;
+        }
+
+        if (_userConnections.TryGetValue(userId, out var currentConnectionId)
+            && currentConnectionId != connectionId)
+        {
+            return;
+        }
+
+        _userConnections.TryRemove(userId, out _);
+        _userSessions.TryRemove(userId, out var sessionId);
+        if (!_sessions.TryGetValue(sessionId, out var session))
+        {
+            return;
+        }
+
+        if (session.Disconnect(userId))
+        {
+            logger.LogInformation(
+                "Closed session {SessionId}; no connected players remain",
+                session.Id);
         }
     }
 }

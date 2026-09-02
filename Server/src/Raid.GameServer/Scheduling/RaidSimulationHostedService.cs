@@ -20,6 +20,11 @@ public sealed class RaidSimulationHostedService(
         {
             foreach (var session in registry.All())
             {
+                if (session.IsClosed)
+                {
+                    continue;
+                }
+
                 try
                 {
                     scheduler.Tick(session);
