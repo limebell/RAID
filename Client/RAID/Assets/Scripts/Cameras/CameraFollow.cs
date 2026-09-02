@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Raid.Cameras
 {
-    /// <summary>로컬 플레이어 EntityView를 따라갑니다.</summary>
+    /// <summary>로컬 플레이어 EntityView를 따라갑니다. 각도는 Bind 시 고정됩니다.</summary>
     public class CameraFollow : MonoBehaviour
     {
         [SerializeField] private Vector3 _offset = new(0f, 10f, -6f);
@@ -18,6 +18,14 @@ namespace Raid.Cameras
         public void Bind(Transform target)
         {
             _target = target;
+
+            if (_camera == null || _target == null)
+            {
+                return;
+            }
+
+            _camera.transform.position = _target.position + _offset;
+            _camera.transform.LookAt(_target);
         }
 
         private void LateUpdate()
@@ -28,7 +36,6 @@ namespace Raid.Cameras
             }
 
             _camera.transform.position = _target.position + _offset;
-            _camera.transform.LookAt(_target);
         }
     }
 }

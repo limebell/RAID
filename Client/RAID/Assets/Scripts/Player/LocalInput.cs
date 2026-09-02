@@ -41,6 +41,7 @@ namespace Raid.Player
                 return;
             }
 
+            TryHandleStop();
             TryHandleSkillKeys();
             TryHandlePendingConfirm();
             UpdatePendingSkillAim();
@@ -58,6 +59,14 @@ namespace Raid.Player
                 }
 
                 TryMoveToMousePosition();
+            }
+        }
+
+        private void TryHandleStop()
+        {
+            if (Keyboard.current[Key.S].wasPressedThisFrame)
+            {
+                _client.StopMoving();
             }
         }
 
@@ -202,7 +211,6 @@ namespace Raid.Player
                 {
                     if (!TryResolveEntityTarget(out var entityId))
                     {
-                        Debug.LogWarning("Entity-targeted skill needs an entity under the cursor.");
                         return false;
                     }
 
@@ -214,7 +222,6 @@ namespace Raid.Player
                 {
                     if (!TryResolveGroundPoint(out var point))
                     {
-                        Debug.LogWarning("Point-targeted skill needs a ground point under the cursor.");
                         return false;
                     }
 

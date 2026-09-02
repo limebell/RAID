@@ -1,5 +1,4 @@
 using Raid.Contracts.Common;
-using Raid.Entity.Presentation;
 using TMPro;
 using UnityEngine;
 
@@ -9,7 +8,7 @@ namespace Raid.Entity
     {
         [SerializeField] private MotionEngine _engine;
         [SerializeField] private TMP_Text _label;
-        [SerializeField] private EntityStatusPresentation _statusPresentation;
+        [SerializeField] private TMP_Text _statusText;
         [SerializeField] private GameObject _ranges;
         [SerializeField] private Transform _limitCircle;
         [SerializeField] private Transform _rangeCircle;
@@ -20,6 +19,7 @@ namespace Raid.Entity
 
         public long EntityId { get; private set; }
         public EntityKind Kind { get; private set; }
+        public string DefinitionId { get; private set; }
         public EntityActionStatus ActionStatus { get; private set; } = EntityActionStatus.Idle;
         public string ActionSkillId { get; private set; } = string.Empty;
 
@@ -47,22 +47,18 @@ namespace Raid.Entity
                 }
             }
 
-            if (_statusPresentation == null)
-            {
-                _statusPresentation = GetComponentInChildren<EntityStatusPresentation>(true);
-            }
-
             HideSkillRange();
             SetActionStatus(EntityActionStatus.Idle, null);
         }
 
-        public void Initialize(long entityId, EntityKind kind, Vector2 position, Vector2 direction)
+        public void Initialize(long entityId, EntityKind kind, string definitionId, Vector2 position, Vector2 direction)
         {
             EntityId = entityId;
             Kind = kind;
-            gameObject.name = $"{Kind}:{EntityId}";
+            DefinitionId = definitionId;
+            gameObject.name = $"{Kind}:{DefinitionId}:{EntityId}";
             Engine.SnapTo(position, direction);
-            _label.text = $"{Kind}:{EntityId}";
+            _label.text = $"{Kind}:{DefinitionId}:{EntityId}";
             HideSkillRange();
             SetActionStatus(EntityActionStatus.Idle, null);
         }
@@ -88,7 +84,25 @@ namespace Raid.Entity
 
             ActionStatus = status;
             ActionSkillId = skillId;
-            _statusPresentation?.SetStatus(status, skillId);
+            RefreshStatusText();
+        }
+
+        private void RefreshStatusText()
+        {
+            if (_statusText == null)
+            {
+                return;
+            }
+
+            if (ActionStatus == EntityActionStatus.Idle ||
+                ActionStatus == EntityActionStatus.Moving ||
+                string.IsNullOrEmpty(ActionSkillId))
+            {
+                _statusText.text = ActionStatus.ToString();
+                return;
+            }
+
+            _statusText.text = $"{ActionStatus}\n{ActionSkillId}";
         }
 
         public void ShowSkillRange(SkillTargetingMode mode, float range, float width)
@@ -112,7 +126,8 @@ namespace Raid.Entity
 
                 case SkillTargetingMode.Direction:
                     _rangeDirectionParent.gameObject.SetActive(true);
-                    _rangeDirectionParent.GetChild(0).localScale = new Vector3(width, range, 1f);
+                    _rangeDirectionParent.GetChild(0).localPosition = new Vector3(0f, 0f, range / 2);
+                    _rangeDirectionParent.GetChild(0).localScale = new Vector3(range, width, 1f);
                     break;
             }
         }
@@ -176,7 +191,7 @@ namespace Raid.Entity
             }
 
             var yaw = Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg;
-            _rangeDirectionParent.localRotation = Quaternion.Euler(90f, yaw, 0f);
+            _rangeDirectionParent.localRotation = Quaternion.Euler(0f, yaw, 0f);
         }
     }
 }

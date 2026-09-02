@@ -33,17 +33,18 @@ namespace Raid.Entity
             var view = Spawn(
                 entitySnapshotDto.EntityId,
                 entitySnapshotDto.Kind,
+                entitySnapshotDto.DefinitionId,
                 new Vector2(entitySnapshotDto.Position.X, entitySnapshotDto.Position.Y),
                 new Vector2(entitySnapshotDto.FacingDirection.X, entitySnapshotDto.FacingDirection.Y));
             view?.ApplyActionStatus(entitySnapshotDto.IsBusy, entitySnapshotDto.CurrentPhase);
             return view;
         }
 
-        private EntityView Spawn(long entityId, EntityKind kind, Vector2 position, Vector2 direction)
+        private EntityView Spawn(long entityId, EntityKind kind, string definitionId, Vector2 position, Vector2 direction)
         {
             if (_entities.TryGetValue(entityId, out var existing))
             {
-                existing.Initialize(entityId, kind, position, direction);
+                existing.Initialize(entityId, kind, definitionId, position, direction);
                 return existing;
             }
 
@@ -55,7 +56,7 @@ namespace Raid.Entity
 
             var view = Instantiate(_prefab, _root);
             view.gameObject.SetActive(true);
-            view.Initialize(entityId, kind, position, direction);
+            view.Initialize(entityId, kind, definitionId, position, direction);
             _entities[entityId] = view;
             return view;
         }

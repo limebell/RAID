@@ -29,12 +29,5 @@ namespace Raid.Entity
                 ? status
                 : EntityActionStatus.Idle;
         }
-
-        public static bool IsSkillAction(EntityActionStatus status) =>
-            status is EntityActionStatus.Casting
-                or EntityActionStatus.Windup
-                or EntityActionStatus.Activation
-                or EntityActionStatus.Channeling
-                or EntityActionStatus.Recovery;
     }
 }

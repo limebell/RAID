@@ -2861,13 +2861,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 831106847}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 3, y: 0, z: 0}
-  m_LocalScale: {x: 5, y: 5, z: 1}
+  m_LocalRotation: {x: 0.5, y: -0.5, z: 0.5, w: 0.5}
+  m_LocalPosition: {x: 0, y: 0, z: 0.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 879581034}
-  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 90, y: -90, z: 0}
 --- !u!64 &831106849
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -5608,7 +5608,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EntityView
   _engine: {fileID: 1500400585}
   _label: {fileID: 1748568212}
-  _statusPresentation: {fileID: 0}
+  _statusText: {fileID: 731400065}
   _ranges: {fileID: 1065244532}
   _limitCircle: {fileID: 1169836484}
   _rangeCircle: {fileID: 1986815299}
@@ -7307,7 +7307,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86897a36f53ab4e55bd06dbdaaed20f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BattleSession
-  _baseUrl: http://118.44.45.220:5122
   _registry: {fileID: 137503446}
   _cameraFollow: {fileID: 330585548}
   _playerInfoView: {fileID: 39915510}

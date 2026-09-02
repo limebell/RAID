@@ -14,6 +14,9 @@ namespace Raid.Network
         private readonly string _baseUrl;
         private HubConnection _connection;
         private int _sequence;
+        private RaidMode _mode = RaidMode.Practice;
+        private Guid? _sessionId;
+        private readonly string _userId = Guid.NewGuid().ToString("N");
 
         public bool IsInitialized => _connection != null;
 
@@ -47,16 +50,36 @@ namespace Raid.Network
                 .Build();
 
             RegisterHandlers();
+
+            _connection.Reconnected += async _ =>
+            {
+                if (_sessionId is not Guid sessionId)
+                {
+                    return;
+                }
+
+                try
+                {
+                    await JoinSessionAsync(_mode, sessionId);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogError($"Failed to rejoin session {sessionId}: {exception}");
+                }
+            };
         }
 
         public async Task<JoinSessionResponse> ConnectAsync(
-            RaidMode mode = RaidMode.Practice)
+            RaidMode mode = RaidMode.Practice,
+            Guid? sessionId = null)
         {
             if (_connection == null)
             {
                 throw new InvalidOperationException(
                     "HubClient is not initialized.");
             }
+
+            _mode = mode;
 
             if (_connection.State != HubConnectionState.Connected &&
                 _connection.State != HubConnectionState.Connecting)
@@ -65,14 +88,23 @@ namespace Raid.Network
                 await _connection.StartAsync();
             }
 
+            return await JoinSessionAsync(mode, sessionId);
+        }
+
+        private async Task<JoinSessionResponse> JoinSessionAsync(
+            RaidMode mode,
+            Guid? sessionId)
+        {
             var response = await _connection.InvokeAsync<JoinSessionResponse>(
                 "JoinSession",
-                new JoinSessionRequest(mode));
+                new JoinSessionRequest(mode, _userId, sessionId));
 
             if (response is null)
             {
                 throw new InvalidOperationException("JoinSession returned null.");
             }
+
+            _sessionId = response.SessionId;
 
             Debug.Log(
                 $"Joined session {response.SessionId}, " +
@@ -105,6 +137,18 @@ namespace Raid.Network
                 new MoveRequest(_sequence++, position.x, position.y));
         }
 
+        public void StopMoving()
+        {
+            if (_connection == null || !IsConnected)
+            {
+                Debug.LogError($"Failed to stop moving: connection is null or not connected");
+                return;
+            }
+
+            _ = _connection.InvokeAsync(
+                "StopMoving",
+                new StopMovingRequest(_sequence++));
+        }
         public void UseSkill(string skillId, SkillTargetDto target = null)
         {
             if (_connection == null || !IsConnected || string.IsNullOrEmpty(skillId))

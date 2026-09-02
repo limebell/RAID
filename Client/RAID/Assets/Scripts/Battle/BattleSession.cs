@@ -14,7 +14,7 @@ namespace Raid.Battle
 {
     public class BattleSession : MonoBehaviour
     {
-        [SerializeField] private string _baseUrl = "http://118.44.45.220:5122";
+        private const string BaseUrl = "http://localhost:5122"; //"http://118.44.45.220:5122";
         [SerializeField] private EntityRegistry _registry;
         [SerializeField] private CameraFollow _cameraFollow;
         [SerializeField] private PlayerInfoView _playerInfoView;
@@ -32,7 +32,7 @@ namespace Raid.Battle
 
         private async void Start()
         {
-            _client = new HubClient(_baseUrl);
+            _client = new HubClient(BaseUrl);
             _client.Initialize();
             _client.BattleTickReceived += OnBattleTickReceived;
 
