@@ -11,9 +11,10 @@ namespace Raid.Entity
         Casting = 1,
         Windup = 2,
         Activation = 3,
-        Channeling = 4,
-        Recovery = 5,
-        Moving = 6
+        Recovery = 4,
+        Moving = 5,
+        Holding = 6,
+        Charging = 7
     }
 
     public static class EntityActionStatusUtil

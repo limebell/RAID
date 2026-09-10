@@ -21,7 +21,7 @@ namespace Raid.Network
         public bool IsInitialized => _connection != null;
 
         public bool IsConnected =>
-            _connection?.State == HubConnectionState.Connected;
+            _connection != null && _connection.State == HubConnectionState.Connected;
 
         public event Action<BattleTickMessage> BattleTickReceived;
 
@@ -137,6 +137,19 @@ namespace Raid.Network
                 new MoveRequest(_sequence++, position.x, position.y));
         }
 
+        public void AttackMove(Vector2 position)
+        {
+            if (_connection == null || !IsConnected)
+            {
+                Debug.LogError("Failed to attack-move: connection is null or not connected");
+                return;
+            }
+
+            _ = _connection.InvokeAsync(
+                "AttackMove",
+                new AttackMoveRequest(_sequence++, position.x, position.y));
+        }
+
         public void StopMoving()
         {
             if (_connection == null || !IsConnected)
@@ -149,6 +162,7 @@ namespace Raid.Network
                 "StopMoving",
                 new StopMovingRequest(_sequence++));
         }
+
         public void UseSkill(string skillId, SkillTargetDto target = null)
         {
             if (_connection == null || !IsConnected || string.IsNullOrEmpty(skillId))
@@ -160,6 +174,19 @@ namespace Raid.Network
             _ = _connection.InvokeAsync(
                 "UseSkill",
                 new UseSkillRequest(_sequence++, skillId, target));
+        }
+
+        public void ReleaseSkill(string skillId)
+        {
+            if (_connection == null || !IsConnected || string.IsNullOrEmpty(skillId))
+            {
+                Debug.LogError($"Failed to release skill {skillId}: connection is null or not connected");
+                return;
+            }
+
+            _ = _connection.InvokeAsync(
+                "ReleaseSkill",
+                new ReleaseSkillRequest(_sequence++, skillId));
         }
 
         private void RegisterHandlers()

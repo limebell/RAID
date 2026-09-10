@@ -5,6 +5,7 @@ using Raid.Entity;
 using Raid.Network;
 using Raid.UI;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace Raid.Player
@@ -13,93 +14,221 @@ namespace Raid.Player
     {
         [SerializeField] private Camera _camera;
         [SerializeField] private LayerMask _groundMask;
+        [SerializeField] private LayerMask _entityMask;
         [SerializeField] private PlayerOptionsView _optionsView;
+        [SerializeField] private ParticleSystem _moveIndicator;
 
-        private BattleSession _battleSession;
         private SkillSlotState _pendingSkill;
+        private SkillSlotState _heldSkill;
+        private bool _attackMovePending;
+        private bool _releaseHeldWithMouse;
+        private bool _ignoreMouseReleaseThisFrame;
+        private EntityView _hoveredEntity;
+        private RaidPlayerInput _input;
 
-        private HubClient _client => _battleSession != null ? _battleSession.Client : null;
+        private BattleSession Session => BattleSession.Instance;
+        private HubClient _client => Session != null ? Session.Client : null;
 
-        private void Start()
+        private void OnEnable()
         {
-            _battleSession = GetComponent<BattleSession>();
-            if (_optionsView == null)
+            _input = new RaidPlayerInput();
+            _input.ApplySkillBindings(PlayerOptions.Current);
+            _input.SkillPressed += OnSkillPressed;
+            _input.SkillReleased += OnSkillReleased;
+            _input.StopPressed += OnStopPressed;
+            _input.AttackMovePressed += OnAttackMovePressed;
+            PlayerOptions.Current.SkillKeysChanged += ApplySkillBindings;
+            _input.Enable();
+        }
+
+        private void OnDisable()
+        {
+            PlayerOptions.Current.SkillKeysChanged -= ApplySkillBindings;
+            if (_input != null)
             {
-                _optionsView = FindFirstObjectByType<PlayerOptionsView>();
+                _input.SkillPressed -= OnSkillPressed;
+                _input.SkillReleased -= OnSkillReleased;
+                _input.StopPressed -= OnStopPressed;
+                _input.AttackMovePressed -= OnAttackMovePressed;
+                _input.Dispose();
+                _input = null;
             }
+
+            ReleaseHeldSkill();
+            CancelAttackMovePending();
+            ClearEntityHover();
+        }
+
+        private void ApplySkillBindings()
+        {
+            _input?.ApplySkillBindings(PlayerOptions.Current);
         }
 
         private void Update()
         {
-            if (_optionsView != null && (_optionsView.IsOpen || _optionsView.IsRebinding))
+            if (!CanHandleGameplayInput())
             {
+                ClearEntityHover();
                 return;
             }
 
-            if (_client == null || !_client.IsConnected)
+            if (_input.ConfirmWasPressedThisFrame)
             {
-                return;
+                OnConfirmPressed();
             }
 
-            TryHandleStop();
-            TryHandleSkillKeys();
-            TryHandlePendingConfirm();
+            if (_input.ConfirmWasReleasedThisFrame)
+            {
+                OnConfirmReleased();
+            }
+
+            if (_input.CommandMoveWasPressedThisFrame)
+            {
+                OnCommandMovePressed();
+            }
+
+            RefreshRangePreview();
             UpdatePendingSkillAim();
+            UpdateEntityHover();
+        }
 
-            if (_camera == null || Mouse.current == null)
+        private bool CanHandleGameplayInput()
+        {
+            return _optionsView != null
+                && !_optionsView.IsOpen
+                && !_optionsView.IsRebinding
+                && _client != null
+                && _client.IsConnected;
+        }
+
+        private void OnSkillPressed(int slotIndex)
+        {
+            Debug.Log(PlayerOptions.Current.GetSkillKey(slotIndex));
+            if (!CanHandleGameplayInput())
             {
                 return;
             }
 
-            if (Mouse.current.rightButton.wasPressedThisFrame)
-            {
-                if (_pendingSkill != null)
-                {
-                    CancelPendingSkill();
-                }
+            var state = Session.LocalPlayerState;
+            var slot = state.GetSlot(slotIndex);
+            OnSkillKeyPressed(slot);
+        }
 
-                TryMoveToMousePosition();
+        private void OnSkillReleased(int slotIndex)
+        {
+            if (_heldSkill == null || _releaseHeldWithMouse)
+            {
+                return;
+            }
+
+            var state = Session.LocalPlayerState;
+            var slot = state.GetSlot(slotIndex);
+            if (slot.SkillId == _heldSkill.SkillId)
+            {
+                ReleaseHeldSkill();
             }
         }
 
-        private void TryHandleStop()
+        private void OnStopPressed()
         {
-            if (Keyboard.current[Key.S].wasPressedThisFrame)
+            if (!CanHandleGameplayInput())
             {
-                _client.StopMoving();
+                return;
             }
+
+            CancelPendingSkill();
+            CancelAttackMovePending();
+            _client.StopMoving();
         }
 
-        private void TryHandleSkillKeys()
+        private void OnAttackMovePressed()
         {
-            var keyboard = Keyboard.current;
-            if (keyboard == null)
+            if (!CanHandleGameplayInput())
             {
                 return;
             }
 
-            var state = _battleSession.LocalPlayerState;
-            if (state == null)
+            if (_attackMovePending)
+            {
+                CancelAttackMovePending();
+                return;
+            }
+
+            SetAttackMovePending();
+        }
+
+        private static bool IsPointerOverUi()
+        {
+            return EventSystem.current != null
+                && EventSystem.current.IsPointerOverGameObject();
+        }
+
+        private void OnConfirmPressed()
+        {
+            if (IsPointerOverUi())
             {
                 return;
             }
 
-            var options = PlayerOptions.Current;
-            for (var i = 0; i < PlayerOptions.SkillSlotCount; i++)
+            if (_pendingSkill != null)
             {
-                var key = options.GetSkillKey(i);
-                if (key == Key.None || !keyboard[key].wasPressedThisFrame)
-                {
-                    continue;
-                }
+                TryHandlePendingConfirm();
+                return;
+            }
 
-                if (!state.TryGetSlot(i, out var slot))
-                {
-                    continue;
-                }
+            TryConfirmAttackMove();
+        }
 
-                OnSkillKeyPressed(slot);
-                break;
+        private void OnConfirmReleased()
+        {
+            if (!_releaseHeldWithMouse)
+            {
+                return;
+            }
+
+            if (_ignoreMouseReleaseThisFrame)
+            {
+                _ignoreMouseReleaseThisFrame = false;
+                return;
+            }
+
+            ReleaseHeldSkill();
+        }
+
+        private void OnCommandMovePressed()
+        {
+            if (IsPointerOverUi())
+            {
+                return;
+            }
+
+            CancelPendingSkill();
+            CancelAttackMovePending();
+            TryMoveToMousePosition();
+        }
+
+        private void ShowMoveIndicator(Vector3 position)
+        {
+            _moveIndicator.transform.position = position + Vector3.up * 0.02f;
+
+            _moveIndicator.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            _moveIndicator.Play();
+        }
+
+        private void ReleaseHeldSkill()
+        {
+            if (_heldSkill == null)
+            {
+                return;
+            }
+
+            var skillId = _heldSkill.SkillId;
+            _heldSkill = null;
+            _releaseHeldWithMouse = false;
+            _ignoreMouseReleaseThisFrame = false;
+            if (_client != null && _client.IsConnected)
+            {
+                _client.ReleaseSkill(skillId);
             }
         }
 
@@ -110,11 +239,18 @@ namespace Raid.Player
                 return;
             }
 
+            CancelAttackMovePending();
+
             if (PlayerOptions.Current.SmartCasting.Value ||
                 slot.TargetingMode == SkillTargetingMode.None)
             {
                 CancelPendingSkill();
-                TryUseSkill(slot);
+                if (!TryUseSkill(slot))
+                {
+                    Debug.LogWarning(
+                        $"Could not use skill '{slot.SkillId}' ({slot.TargetingMode}).");
+                }
+
                 return;
             }
 
@@ -129,13 +265,14 @@ namespace Raid.Player
 
         private void SetPendingSkill(SkillSlotState slot)
         {
+            CancelAttackMovePending();
             _pendingSkill = slot;
-            if (_battleSession.Registry.TryGet(_battleSession.PlayerEntityId, out var player))
+            if (Session.Registry.TryGet(Session.PlayerEntityId, out var player))
             {
                 player.ShowSkillRange(slot.TargetingMode, slot.Range, slot.Width);
             }
 
-            UpdatePendingSkillAim();    
+            UpdatePendingSkillAim();
         }
 
         private void UpdatePendingSkillAim()
@@ -152,7 +289,7 @@ namespace Raid.Player
                 return;
             }
 
-            if (!_battleSession.Registry.TryGet(_battleSession.PlayerEntityId, out var player))
+            if (!Session.Registry.TryGet(Session.PlayerEntityId, out var player))
             {
                 return;
             }
@@ -160,41 +297,111 @@ namespace Raid.Player
             player.UpdateSkillRangeAim(new Vector3(point.x, 0f, point.y));
         }
 
-        private void TryHandlePendingConfirm()
+        private void SetAttackMovePending()
         {
-            if (_pendingSkill == null || Mouse.current == null)
+            CancelPendingSkill();
+            _attackMovePending = true;
+            var slot = Session.LocalPlayerState.BasicAttack;
+            if (slot == null ||
+                !Session.Registry.TryGet(Session.PlayerEntityId, out var player))
             {
                 return;
             }
 
-            if (!Mouse.current.leftButton.wasPressedThisFrame)
+            player.ShowSkillRange(SkillTargetingMode.Entity, slot.Range, slot.Width);
+        }
+
+        private void CancelAttackMovePending()
+        {
+            if (!_attackMovePending)
+            {
+                return;
+            }
+
+            _attackMovePending = false;
+            if (_pendingSkill != null)
+            {
+                return;
+            }
+
+            if (Session.Registry.TryGet(Session.PlayerEntityId, out var player))
+            {
+                player.HideSkillRange();
+            }
+        }
+
+        private void TryConfirmAttackMove()
+        {
+            if (!_attackMovePending)
+            {
+                return;
+            }
+
+            CancelAttackMovePending();
+
+            if (TryResolveHostileEntity(out var entityId))
+            {
+                var slot = Session.LocalPlayerState.BasicAttack;
+                if (slot != null)
+                {
+                    _client.UseSkill(
+                        slot.SkillId,
+                        new SkillTargetDto(SkillTargetingMode.Entity, EntityId: entityId));
+                }
+
+                return;
+            }
+
+            if (!TryResolveGroundPoint(out var point))
+            {
+                SetAttackMovePending();
+                return;
+            }
+
+            ShowMoveIndicator(new Vector3(point.x, 0f, point.y));
+            _client.AttackMove(point);
+        }
+
+        private void TryHandlePendingConfirm()
+        {
+            if (_pendingSkill == null)
             {
                 return;
             }
 
             var slot = _pendingSkill;
             CancelPendingSkill();
-            TryUseSkill(slot);
+            if (!TryUseSkill(slot, releaseWithMouse: slot.HoldsUntilRelease))
+            {
+                SetPendingSkill(slot);
+            }
         }
 
         private void CancelPendingSkill()
         {
             _pendingSkill = null;
-            if (_battleSession != null &&
-                _battleSession.Registry.TryGet(_battleSession.PlayerEntityId, out var player))
+            if (Session.Registry.TryGet(Session.PlayerEntityId, out var player))
             {
                 player.HideSkillRange();
             }
         }
 
-        private void TryUseSkill(SkillSlotState slot)
+        private bool TryUseSkill(SkillSlotState slot, bool releaseWithMouse = false)
         {
             if (!TryBuildTarget(slot.TargetingMode, out var target))
             {
-                return;
+                return false;
             }
 
             _client.UseSkill(slot.SkillId, target);
+            if (slot.HoldsUntilRelease)
+            {
+                _heldSkill = slot;
+                _releaseHeldWithMouse = releaseWithMouse;
+                _ignoreMouseReleaseThisFrame = releaseWithMouse;
+            }
+
+            return true;
         }
 
         private bool TryBuildTarget(SkillTargetingMode mode, out SkillTargetDto target)
@@ -235,7 +442,7 @@ namespace Raid.Player
                 {
                     if (!TryResolveDirection(out var direction))
                     {
-                        Debug.LogWarning("Direction-targeted skill needs a ground point under the cursor.");
+                        Debug.LogWarning("Direction-targeted skill needs a facing or ground point.");
                         return false;
                     }
 
@@ -254,20 +461,8 @@ namespace Raid.Player
         private bool TryResolveEntityTarget(out long entityId)
         {
             entityId = 0;
-
-            if (_camera == null || Mouse.current == null)
-            {
-                return false;
-            }
-
-            var ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
-            if (!Physics.Raycast(ray, out var hit))
-            {
-                return false;
-            }
-
-            var view = hit.collider.GetComponentInParent<EntityView>();
-            if (view == null || view.EntityId == _battleSession.PlayerEntityId)
+            if (!TryGetEntityUnderCursor(out var view) ||
+                view.EntityId == Session.PlayerEntityId)
             {
                 return false;
             }
@@ -276,17 +471,78 @@ namespace Raid.Player
             return true;
         }
 
-        private bool TryResolveGroundPoint(out Vector2 point)
+        private bool TryResolveHostileEntity(out long entityId)
         {
-            point = default;
+            entityId = 0;
+            if (!TryGetEntityUnderCursor(out var view) ||
+                view.EntityId == Session.PlayerEntityId ||
+                view.IsAlly)
+            {
+                return false;
+            }
 
-            if (_camera == null || Mouse.current == null)
+            entityId = view.EntityId;
+            return true;
+        }
+
+        private void UpdateEntityHover()
+        {
+            if (!TryGetEntityUnderCursor(out var view))
+            {
+                ClearEntityHover();
+                return;
+            }
+
+            if (_hoveredEntity == view)
+            {
+                return;
+            }
+
+            ClearEntityHover();
+            _hoveredEntity = view;
+            _hoveredEntity.SetHoverOutline(true);
+        }
+
+        private void ClearEntityHover()
+        {
+            if (_hoveredEntity == null)
+            {
+                return;
+            }
+
+            _hoveredEntity.SetHoverOutline(false);
+            _hoveredEntity = null;
+        }
+
+        private bool TryGetEntityUnderCursor(out EntityView view)
+        {
+            view = null;
+
+            if (Mouse.current == null)
             {
                 return false;
             }
 
             var ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
-            // Ground 레이어만 맞추면 엔티티 위 클릭도 바닥 좌표로 통과한다.
+            if (!Physics.Raycast(ray, out var hit, Mathf.Infinity, _entityMask, QueryTriggerInteraction.Collide))
+            {
+                return false;
+            }
+
+            view = hit.collider.GetComponentInParent<EntityView>();
+            return view != null;
+        }
+
+        private bool TryResolveGroundPoint(out Vector2 point)
+        {
+            point = default;
+
+            if (Mouse.current == null)
+            {
+                return false;
+            }
+
+            var ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
             if (!Physics.Raycast(ray, out var hit, Mathf.Infinity, _groundMask))
             {
                 return false;
@@ -296,23 +552,60 @@ namespace Raid.Player
             return true;
         }
 
+        private void RefreshRangePreview()
+        {
+            if (!Session.Registry.TryGet(Session.PlayerEntityId, out var player))
+            {
+                return;
+            }
+
+            if (_pendingSkill != null)
+            {
+                _pendingSkill = Session.LocalPlayerState.Resolve(_pendingSkill);
+                player.ShowSkillRange(
+                    _pendingSkill.TargetingMode,
+                    _pendingSkill.Range,
+                    _pendingSkill.Width);
+                return;
+            }
+
+            if (!_attackMovePending)
+            {
+                return;
+            }
+
+            var slot = Session.LocalPlayerState.BasicAttack;
+            if (slot == null)
+            {
+                return;
+            }
+
+            player.ShowSkillRange(SkillTargetingMode.Entity, slot.Range, slot.Width);
+        }
+
         private bool TryResolveDirection(out Vector2 direction)
         {
             direction = default;
 
-            if (!TryResolveGroundPoint(out var point))
-            {
-                return false;
-            }
-
-            if (!_battleSession.Registry.TryGet(_battleSession.PlayerEntityId, out var player) ||
+            if (!Session.Registry.TryGet(Session.PlayerEntityId, out var player) ||
                 player == null)
             {
                 return false;
             }
 
             var origin = new Vector2(player.transform.position.x, player.transform.position.z);
-            direction = point - origin;
+            if (TryResolveGroundPoint(out var point))
+            {
+                direction = point - origin;
+                if (direction.sqrMagnitude > 0.0001f)
+                {
+                    direction.Normalize();
+                    return true;
+                }
+            }
+
+            var forward = player.transform.forward;
+            direction = new Vector2(forward.x, forward.z);
             if (direction.sqrMagnitude <= 0.0001f)
             {
                 return false;
@@ -329,6 +622,7 @@ namespace Raid.Player
                 return;
             }
 
+            ShowMoveIndicator(new Vector3(point.x, 0f, point.y));
             _client.Move(point);
         }
     }

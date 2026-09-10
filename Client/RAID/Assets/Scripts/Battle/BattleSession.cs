@@ -8,27 +8,39 @@ using Raid.Entity;
 using Raid.Network;
 using Raid.Player;
 using Raid.UI;
+using Raid.Vfx;
 using UnityEngine;
 
 namespace Raid.Battle
 {
     public class BattleSession : MonoBehaviour
     {
+        public static BattleSession Instance { get; private set; }
+
         private const string BaseUrl = "http://localhost:5122"; //"http://118.44.45.220:5122";
         [SerializeField] private EntityRegistry _registry;
         [SerializeField] private CameraFollow _cameraFollow;
         [SerializeField] private PlayerInfoView _playerInfoView;
+        [SerializeField] private TargetHealthView _targetHealthView;
 
         private readonly ConcurrentQueue<BattleTickMessage> _pendingTicks = new();
 
         private HubClient _client;
         private long _playerEntityId;
-        private LocalPlayerState _localPlayerState;
+        private LocalPlayerState _localPlayerState = new();
+        private SkillVfxDirector _vfx;
 
         public long PlayerEntityId => _playerEntityId;
         public HubClient Client => _client;
         public LocalPlayerState LocalPlayerState => _localPlayerState;
         public EntityRegistry Registry => _registry;
+
+        private void Awake()
+        {
+            Instance = this;
+            _vfx = gameObject.GetComponent<SkillVfxDirector>();
+            _vfx.Bind(_registry);
+        }
 
         private async void Start()
         {
@@ -47,8 +59,6 @@ namespace Raid.Battle
                 }
 
                 var localEntity = join.Snapshot.Entities.FirstOrDefault(e => e.EntityId == _playerEntityId);
-                _localPlayerState?.Dispose();
-                _localPlayerState = new LocalPlayerState();
                 _localPlayerState.InitializeFromJoin(localEntity, join.Skills);
 
                 BindLocalPlayer();
@@ -61,7 +71,8 @@ namespace Raid.Battle
 
         private void BindLocalPlayer()
         {
-            _playerInfoView?.Bind(_localPlayerState);
+            _playerInfoView.Bind(_localPlayerState);
+            _targetHealthView.Bind(_localPlayerState);
 
             if (_registry.TryGet(_playerEntityId, out var player))
             {
@@ -86,7 +97,7 @@ namespace Raid.Battle
                 ApplyTick(tick);
             }
 
-            _localPlayerState?.Tick(Time.deltaTime);
+            _localPlayerState.Tick(Time.deltaTime);
         }
 
         private void ApplyTick(BattleTickMessage message)
@@ -142,11 +153,10 @@ namespace Raid.Battle
                     if (!_registry.TryGet(entity.EntityId, out var moving))
                     {
                         Debug.LogWarning($"Event {e.Type} for Entity {entity.EntityId} not found in registry.");
+                        break;
                     }
 
-                    var direction = new Vector2(entity.FacingDirection.X, entity.FacingDirection.Y);
-                    var position = new Vector2(entity.Position.X, entity.Position.Y);
-                    moving?.Engine.SnapTo(position, direction);
+                    SnapView(moving, entity);
                     break;
                 }
 
@@ -160,11 +170,69 @@ namespace Raid.Battle
                         break;
                     }
 
+                    if (e.Type == BattleEventType.ActionStarted)
+                    {
+                        SnapView(view, entity);
+                    }
+
                     view.ApplyActionStatus(entity.IsBusy, entity.CurrentPhase, e.SkillId);
+                    if (entity.EntityId == _playerEntityId)
+                    {
+                        ApplyLocalActionGauge(e);
+                    }
+
+                    TryPlaySkillVfx(e, entity.EntityId);
+                    break;
+                }
+
+                case BattleEventType.StatusEffectApplied:
+                case BattleEventType.StatusEffectRemoved:
+                {
+                    if (entity.EntityId == _playerEntityId)
+                    {
+                        _localPlayerState.ApplyBuff(
+                            e.Reason,
+                            applied: e.Type == BattleEventType.StatusEffectApplied);
+                    }
+
                     break;
                 }
 
                 case BattleEventType.DamageApplied:
+                {
+                    if (!_registry.TryGet(entity.EntityId, out _))
+                    {
+                        _registry.Spawn(entity);
+                    }
+
+                    if (entity.EntityId == _playerEntityId)
+                    {
+                        _localPlayerState.ApplyVitals(entity);
+                    }
+
+                    if (e.AttackerId == _playerEntityId &&
+                        entity.EntityId != _playerEntityId)
+                    {
+                        _localPlayerState.RememberAttackedTarget(entity);
+                    }
+                    else
+                    {
+                        _localPlayerState.ApplyTargetVitalsIfTracked(entity);
+                    }
+
+                    if (e.AttackerId is long attackerId &&
+                        e.Amount is float amount)
+                    {
+                        _vfx.ConfirmHit(
+                            attackerId,
+                            entity.EntityId,
+                            e.SkillId ?? string.Empty,
+                            amount);
+                    }
+
+                    break;
+                }
+
                 case BattleEventType.EntitySpawned:
                 {
                     if (!_registry.TryGet(entity.EntityId, out _))
@@ -178,7 +246,7 @@ namespace Raid.Battle
                 {
                     if (entity.EntityId == _playerEntityId)
                     {
-                        _localPlayerState?.ApplyVitals(entity);
+                        _localPlayerState.ApplyVitals(entity);
                     }
 
                     break;
@@ -190,7 +258,7 @@ namespace Raid.Battle
                         !string.IsNullOrEmpty(e.SkillId) &&
                         e.Amount is float duration)
                     {
-                        _localPlayerState?.StartCooldown(e.SkillId, duration);
+                        _localPlayerState.StartCooldown(e.SkillId, duration);
                     }
 
                     break;
@@ -201,7 +269,7 @@ namespace Raid.Battle
                     if (entity.EntityId == _playerEntityId &&
                         !string.IsNullOrEmpty(e.SkillId))
                     {
-                        _localPlayerState?.ReadyCooldown(e.SkillId);
+                        _localPlayerState.ReadyCooldown(e.SkillId);
                     }
 
                     break;
@@ -209,9 +277,81 @@ namespace Raid.Battle
             }
         }
 
+        private static void SnapView(EntityView view, EntitySnapshotDto entity)
+        {
+            var direction = new Vector2(entity.FacingDirection.X, entity.FacingDirection.Y);
+            var position = new Vector2(entity.Position.X, entity.Position.Y);
+            view.Engine.SnapTo(position, direction);
+        }
+
+        private void ApplyLocalActionGauge(BattleEventDto e)
+        {
+            if (e.Type == BattleEventType.ActionEnded)
+            {
+                _localPlayerState.StopActionGauge();
+                return;
+            }
+
+            _localPlayerState.StartActionGauge(e.Phase, e.SkillId, e.Amount);
+        }
+
+        private void TryPlaySkillVfx(BattleEventDto e, long casterId)
+        {
+            if (e.Type != BattleEventType.ActionPhaseChanged ||
+                !string.Equals(e.Phase, "Activation", System.StringComparison.OrdinalIgnoreCase) ||
+                string.IsNullOrEmpty(e.SkillId) ||
+                !_registry.TryGet(casterId, out var caster))
+            {
+                return;
+            }
+
+            EntityView target = null;
+            var point = caster.transform.position;
+            var direction = Vector3.zero;
+            if (e.Target?.Direction is { } aim)
+            {
+                direction = new Vector3(aim.X, 0f, aim.Y);
+            }
+            else if (e.Target?.EntityId is long targetId &&
+                _registry.TryGet(targetId, out var targetView))
+            {
+                target = targetView;
+                point = targetView.transform.position;
+            }
+            else if (e.Target?.Position is { } position)
+            {
+                point = new Vector3(position.X, 0f, position.Y);
+            }
+
+            var speed = 0f;
+            var radius = 0f;
+            var range = 0f;
+            if (_localPlayerState.TryGetSlotBySkillId(e.SkillId, out var slot))
+            {
+                speed = slot.ProjectileSpeed;
+                radius = slot.Width;
+                range = slot.Range;
+            }
+
+            _vfx.Play(e.SkillId, new SkillVfxContext(
+                e.SkillId,
+                caster,
+                target,
+                point,
+                speed,
+                radius,
+                direction,
+                range));
+        }
+
         private async void OnDestroy()
         {
-            _localPlayerState?.Dispose();
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+
+            _localPlayerState.Dispose();
             _localPlayerState = null;
 
             if (_client == null)

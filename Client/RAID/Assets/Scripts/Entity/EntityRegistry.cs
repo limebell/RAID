@@ -36,7 +36,7 @@ namespace Raid.Entity
                 entitySnapshotDto.DefinitionId,
                 new Vector2(entitySnapshotDto.Position.X, entitySnapshotDto.Position.Y),
                 new Vector2(entitySnapshotDto.FacingDirection.X, entitySnapshotDto.FacingDirection.Y));
-            view?.ApplyActionStatus(entitySnapshotDto.IsBusy, entitySnapshotDto.CurrentPhase);
+            view.ApplyActionStatus(entitySnapshotDto.IsBusy, entitySnapshotDto.CurrentPhase);
             return view;
         }
 
@@ -46,12 +46,6 @@ namespace Raid.Entity
             {
                 existing.Initialize(entityId, kind, definitionId, position, direction);
                 return existing;
-            }
-
-            if (_prefab == null)
-            {
-                Debug.LogError("EntityRegistry prefab is not assigned.");
-                return null;
             }
 
             var view = Instantiate(_prefab, _root);

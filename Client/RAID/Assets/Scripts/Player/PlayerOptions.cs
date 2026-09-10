@@ -26,6 +26,8 @@ namespace Raid.Player
 
         public ReactiveProperty<bool> SmartCasting { get; }
 
+        public event Action SkillKeysChanged;
+
         private PlayerOptions(bool smartCasting, Key[] skillKeys)
         {
             SmartCasting = new ReactiveProperty<bool>(smartCasting);
@@ -74,6 +76,7 @@ namespace Raid.Player
 
             _skillKeys[slotIndex] = key;
             Save();
+            SkillKeysChanged?.Invoke();
         }
 
         public void ResetToDefaults()
@@ -81,6 +84,7 @@ namespace Raid.Player
             SmartCasting.Value = true;
             Array.Copy(DefaultSkillKeys, _skillKeys, SkillSlotCount);
             Save();
+            SkillKeysChanged?.Invoke();
         }
 
         public void Save()
