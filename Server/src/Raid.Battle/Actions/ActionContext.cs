@@ -1,3 +1,4 @@
+using Raid.Battle.Commands;
 using Raid.Battle.Entities;
 using Raid.Battle.World;
 
@@ -11,7 +12,9 @@ public sealed class ActionContext(BattleWorld world, BattleEntity owner, GameAct
 
     public GameAction Action { get; } = action;
 
-    public EntityId? TargetId { get; init; }
+    public SkillTarget Target => Action.Target;
+
+    public EntityId? TargetId => Action.TargetId;
 
     public float Damage { get; init; }
 }

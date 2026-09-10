@@ -11,8 +11,8 @@ public sealed class PlayerEntity(
     PlayerClassDefinition playerClass,
     Vector2 position,
     Vector2 facingDirection,
-    float moveSpeed = 6f,
-    float turnSpeedRadiansPerSecond = 12f)
+    float moveSpeed,
+    float turnSpeedRadiansPerSecond)
     : BattleEntity(
         id,
         EntityKind.Player,
@@ -28,6 +28,8 @@ public sealed class PlayerEntity(
 
     public PlayerClassDefinition Class { get; } = playerClass;
 
+    public SkillBar SkillBar { get; internal set; } = SkillBar.Empty;
+
     public override string DefinitionId => Class.ClassId;
 
     public float MaxMana { get; } = playerClass.MaxMana;
@@ -38,6 +40,10 @@ public sealed class PlayerEntity(
 
     internal Dictionary<string, float> SkillCooldownRemainingSeconds { get; } =
         new(StringComparer.Ordinal);
+
+    internal CombatOrder CombatOrder { get; } = new();
+
+    internal SkillChainState? ChainState { get; set; }
 
     public SkillDefinition? FindSkill(string skillId)
     {

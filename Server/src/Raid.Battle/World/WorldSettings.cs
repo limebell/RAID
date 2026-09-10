@@ -6,6 +6,8 @@ public sealed class WorldSettings
 
     public const float PracticeHighManaRegenPerSecond = 100_000f;
 
+    public const float PointProjectileTravelDistance = 8f;
+
     public int FixedDeltaMilliseconds { get; init; } = DefaultFixedDeltaMilliseconds;
 
     public PracticeSettings Practice { get; } = new();
@@ -25,5 +27,16 @@ public sealed class WorldSettings
         }
 
         return (durationMilliseconds + FixedDeltaMilliseconds - 1) / FixedDeltaMilliseconds;
+    }
+
+    public int ToTravelTicks(float distance, float speed)
+    {
+        if (speed <= 0f || distance <= 0f)
+        {
+            return 0;
+        }
+
+        var seconds = distance / speed;
+        return Math.Max(1, (int)Math.Ceiling(seconds / FixedDeltaTimeSeconds));
     }
 }

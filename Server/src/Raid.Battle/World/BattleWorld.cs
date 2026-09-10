@@ -6,6 +6,8 @@ using Raid.Battle.Entities;
 using Raid.Battle.Events;
 using Raid.Battle.Movement;
 using Raid.Battle.Cooldowns;
+using Raid.Battle.Definitions;
+using Raid.Battle.Effects;
 using Raid.Battle.Resources;
 
 namespace Raid.Battle.World;
@@ -14,24 +16,41 @@ public sealed class BattleWorld
 {
     private long _nextEntityId = 1;
 
-    public BattleWorld(WorldSettings? settings = null)
+    public BattleWorld(
+        WorldSettings settings,
+        MapDefinition map,
+        string defaultClassId)
     {
-        Settings = settings ?? new WorldSettings();
+        ArgumentException.ThrowIfNullOrWhiteSpace(defaultClassId);
+
+        Settings = settings;
+        Map = map;
+        DefaultClassId = defaultClassId;
         Entities = new EntityRegistry();
         Events = new BattleEventBuffer();
         Commands = new CommandSystem(this);
         Actions = new ActionSystem(this);
         Hits = new HitRequestSystem(this);
+        DelayedHits = new DelayedHitSystem(this);
+        Projectiles = new ProjectileSystem(this);
         Movement = new MovementSystem(this);
         Combat = new DamageSystem(this);
+        Orders = new CombatOrderSystem(this);
         Resources = new ResourceSystem(this);
         Cooldowns = new CooldownSystem(this);
+        Effects = new StatusEffectSystem(this);
+        Zones = new ZoneSystem(this);
+        Chains = new SkillChainSystem(this);
         Loop = new WorldLoop(this, Settings);
     }
 
     public long Tick { get; private set; }
 
     public WorldSettings Settings { get; }
+
+    public MapDefinition Map { get; }
+
+    public string DefaultClassId { get; }
 
     public EntityRegistry Entities { get; }
 
@@ -43,13 +62,25 @@ public sealed class BattleWorld
 
     public HitRequestSystem Hits { get; }
 
+    public DelayedHitSystem DelayedHits { get; }
+
+    public ProjectileSystem Projectiles { get; }
+
     public MovementSystem Movement { get; }
 
     public DamageSystem Combat { get; }
 
+    public CombatOrderSystem Orders { get; }
+
     public ResourceSystem Resources { get; }
 
     public CooldownSystem Cooldowns { get; }
+
+    public StatusEffectSystem Effects { get; }
+
+    public ZoneSystem Zones { get; }
+
+    public SkillChainSystem Chains { get; }
 
     public WorldLoop Loop { get; }
 
@@ -59,8 +90,9 @@ public sealed class BattleWorld
         PlayerClassDefinition playerClass,
         Vector2 position,
         Vector2 facingDirection,
-        float moveSpeed = 6f,
-        float turnSpeedRadiansPerSecond = 12f)
+        float moveSpeed,
+        float turnSpeedRadiansPerSecond,
+        IReadOnlyList<string>? barSkillIds = null)
     {
         var entity = new PlayerEntity(
             NextEntityId(),
@@ -71,17 +103,17 @@ public sealed class BattleWorld
             facingDirection,
             moveSpeed,
             turnSpeedRadiansPerSecond);
+        entity.SkillBar = SkillBar.Create(
+            playerClass,
+            barSkillIds ?? SkillBarDefaults.For(playerClass));
         Register(entity);
+        EffectToggle.ApplyDefaultOff(this, entity);
         return entity;
     }
 
-    public DummyEntity CreateDummy(
-        Vector2 position,
-        float moveSpeed = 0f,
-        float turnSpeedRadiansPerSecond = 6f,
-        float maxHealth = 100_000f)
+    public DummyEntity CreateDummy(Vector2 position, EntityDefinition definition)
     {
-        var entity = new DummyEntity(NextEntityId(), position, moveSpeed, turnSpeedRadiansPerSecond, maxHealth);
+        var entity = new DummyEntity(NextEntityId(), position, definition);
         Register(entity);
         return entity;
     }

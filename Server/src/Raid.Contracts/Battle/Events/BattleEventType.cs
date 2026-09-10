@@ -12,6 +12,12 @@ public enum BattleEventType
     DamageApplied = 7,
     EntitySpawned = 8,
     ResourceChanged = 9,
+    HealApplied = 10,
     CooldownStarted = 11,
-    CooldownReady = 12
+    CooldownReady = 12,
+    ShieldChanged = 13,
+    StatusEffectApplied = 14,
+    StatusEffectRemoved = 15,
+    ZoneSpawned = 16,
+    ZoneExpired = 17
 }

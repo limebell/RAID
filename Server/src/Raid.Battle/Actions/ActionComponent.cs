@@ -19,6 +19,8 @@ public sealed class ActionComponent
     public bool IsRecovering =>
         CurrentAction?.CurrentPhaseKind == ActionPhaseKind.Recovery;
 
+    public bool LocksMovement => CurrentAction?.LocksMovement == true;
+
     public void ClearFollowUp()
     {
         FollowUpCommand = null;

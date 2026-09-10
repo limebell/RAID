@@ -1,6 +1,5 @@
 using System.Numerics;
 using Raid.Battle.Commands;
-using Raid.Battle.Definitions;
 using Raid.Battle.Entities;
 using Raid.Battle.Events;
 using Raid.Battle.World;
@@ -14,7 +13,7 @@ public sealed class CooldownSystemTests
     public void Activation_StartsCooldown_AndEmitsEvent()
     {
         var (world, player) = CreatePracticeWithPlayer();
-        var skill = TestClassDefinition.InstantStrike;
+        var skill = player.FindSkill("test.instant_strike")!;
         var dummy = world.Entities.Dummies().Single();
 
         world.Commands.Enqueue(new UseSkillCommand(
@@ -42,7 +41,7 @@ public sealed class CooldownSystemTests
         {
             FixedDeltaMilliseconds = 100
         });
-        var skill = TestClassDefinition.InstantStrike;
+        var skill = player.FindSkill("test.instant_strike")!;
         var dummy = world.Entities.Dummies().Single();
         var target = new SkillTarget(SkillTargetingMode.Entity, EntityId: dummy.Id);
 
@@ -69,7 +68,7 @@ public sealed class CooldownSystemTests
         {
             FixedDeltaMilliseconds = 100
         });
-        var skill = TestClassDefinition.MeteorStrike;
+        var skill = player.FindSkill("test.meteor_strike")!;
         var dummy = world.Entities.Dummies().Single();
         var target = PointTargetAt(dummy);
 
@@ -94,8 +93,8 @@ public sealed class CooldownSystemTests
         settings.Practice.IgnoreCooldowns = true;
         var setup = BattleWorldFactory.Create(RaidMode.Practice, settings);
         var world = setup.World;
-        var player = BattleWorldFactory.SpawnPlayer(world, "player-1", participantSlot: 0);
-        var skill = TestClassDefinition.InstantStrike;
+        var player = PracticeSpawn.Player(world, "player-1", participantSlot: 0);
+        var skill = player.FindSkill("test.instant_strike")!;
         var dummy = world.Entities.Dummies().Single();
         var target = new SkillTarget(SkillTargetingMode.Entity, EntityId: dummy.Id);
 
@@ -122,7 +121,7 @@ public sealed class CooldownSystemTests
         {
             FixedDeltaMilliseconds = 1000
         });
-        var skill = TestClassDefinition.InstantStrike;
+        var skill = player.FindSkill("test.instant_strike")!;
         var dummy = world.Entities.Dummies().Single();
 
         world.Commands.Enqueue(new UseSkillCommand(
@@ -150,8 +149,8 @@ public sealed class CooldownSystemTests
     private static (BattleWorld World, PlayerEntity Player) CreatePracticeWithPlayer(
         WorldSettings? settings = null)
     {
-        var setup = BattleWorldFactory.Create(RaidMode.Practice, settings);
-        var player = BattleWorldFactory.SpawnPlayer(setup.World, "player-1", participantSlot: 0);
+        var setup = BattleWorldFactory.Create(RaidMode.Practice, settings ?? new WorldSettings());
+        var player = PracticeSpawn.Player(setup.World, "player-1", participantSlot: 0);
         return (setup.World, player);
     }
 }

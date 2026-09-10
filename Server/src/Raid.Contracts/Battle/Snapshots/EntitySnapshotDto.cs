@@ -16,4 +16,5 @@ public sealed record EntitySnapshotDto(
     float CurrentMana,
     float MaxMana,
     bool IsBusy,
-    string? CurrentPhase);
+    string? CurrentPhase,
+    float CurrentShield = 0f);

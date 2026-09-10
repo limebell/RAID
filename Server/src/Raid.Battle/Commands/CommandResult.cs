@@ -4,7 +4,8 @@ public readonly record struct CommandResult(
     bool Succeeded,
     UseSkillFailureReason? UseSkillFailure = null,
     MoveFailureReason? MoveFailure = null,
-    StopMovingFailureReason? StopMovingFailure = null)
+    StopMovingFailureReason? StopMovingFailure = null,
+    ReleaseSkillFailureReason? ReleaseSkillFailure = null)
 {
     public static CommandResult Success()
     {
@@ -24,5 +25,10 @@ public readonly record struct CommandResult(
     public static CommandResult Failure(StopMovingFailureReason reason)
     {
         return new(false, StopMovingFailure: reason);
+    }
+
+    public static CommandResult Failure(ReleaseSkillFailureReason reason)
+    {
+        return new(false, ReleaseSkillFailure: reason);
     }
 }

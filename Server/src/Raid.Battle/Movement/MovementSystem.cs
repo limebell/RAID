@@ -1,4 +1,5 @@
 using System.Numerics;
+using Raid.Battle.Collision;
 using Raid.Battle.Entities;
 using Raid.Battle.Events;
 using Raid.Battle.World;
@@ -7,6 +8,28 @@ namespace Raid.Battle.Movement;
 
 public sealed class MovementSystem(BattleWorld world)
 {
+    public void MoveTo(BattleEntity entity, Vector2 destination)
+    {
+        var desiredFacingDirection = destination - entity.Position;
+        if (desiredFacingDirection == Vector2.Zero)
+        {
+            desiredFacingDirection = entity.FacingDirection;
+        }
+        else
+        {
+            desiredFacingDirection = Vector2.Normalize(desiredFacingDirection);
+        }
+
+        SetIntent(
+            new MovementIntent(
+                entity.Id,
+                destination,
+                desiredFacingDirection,
+                MoveSpeed: entity.MoveSpeed,
+                TurnSpeedRadiansPerSecond: entity.TurnSpeedRadiansPerSecond,
+                FacingPolicy: MovementFacingPolicy.RotateWhileMoving));
+    }
+
     public void SetIntent(MovementIntent intent)
     {
         var entity = world.Entities.Find(intent.EntityId)
@@ -76,6 +99,28 @@ public sealed class MovementSystem(BattleWorld world)
         world.Events.Add(PositionSetEvent.FromEntity(entity, world.Tick, request.Reason));
     }
 
+    public void SnapFacing(EntityId entityId, Vector2 facingDirection)
+    {
+        var entity = world.Entities.Find(entityId)
+            ?? throw new InvalidOperationException($"Entity '{entityId}' was not found.");
+
+        if (facingDirection == Vector2.Zero)
+        {
+            throw new InvalidOperationException("Snap facing requires a non-zero direction.");
+        }
+
+        var normalized = Vector2.Normalize(facingDirection);
+        if (NearlyEqual(entity.FacingDirection, normalized)
+            && NearlyEqual(entity.DesiredFacingDirection, normalized))
+        {
+            return;
+        }
+
+        entity.FacingDirection = normalized;
+        entity.DesiredFacingDirection = normalized;
+        world.Events.Add(PositionSetEvent.FromEntity(entity, world.Tick, PositionSetReason.SkillFacing));
+    }
+
     public void Update(float deltaTime)
     {
         foreach (var entity in world.Entities.All())
@@ -89,7 +134,13 @@ public sealed class MovementSystem(BattleWorld world)
             entity.DesiredFacingDirection = activeMovement.DesiredFacingDirection;
 
             var rotationChanged = TryRotate(entity, activeMovement, deltaTime);
-            var moved = TryMove(entity, activeMovement, deltaTime);
+            var moved = TryMove(entity, activeMovement, deltaTime, out var blocked);
+            if (blocked)
+            {
+                CompleteMovement(entity, emitMovedEvent: rotationChanged);
+                continue;
+            }
+
             var reachedDestination = HasReachedDestination(entity, activeMovement);
             var facingAligned = IsFacingAligned(entity, activeMovement);
 
@@ -161,8 +212,13 @@ public sealed class MovementSystem(BattleWorld world)
         return true;
     }
 
-    private static bool TryMove(BattleEntity entity, MovementAction activeMovement, float deltaTime)
+    private bool TryMove(
+        BattleEntity entity,
+        MovementAction activeMovement,
+        float deltaTime,
+        out bool blocked)
     {
+        blocked = false;
         if (IsTurnOnly(activeMovement))
         {
             return false;
@@ -180,19 +236,72 @@ public sealed class MovementSystem(BattleWorld world)
         var remainingDistance = toDestination.Length();
         if (remainingDistance <= activeMovement.ArrivalTolerance)
         {
+            if (!CanStep(entity, entity.Position, destination))
+            {
+                blocked = true;
+                return false;
+            }
+
             entity.Position = destination;
             return false;
         }
 
         var stepDistance = activeMovement.MoveSpeed * deltaTime;
-        if (stepDistance >= remainingDistance)
+        var nextPosition = stepDistance >= remainingDistance
+            ? destination
+            : entity.Position + (Vector2.Normalize(toDestination) * stepDistance);
+
+        if (!CanStep(entity, entity.Position, nextPosition))
         {
-            entity.Position = destination;
-            return true;
+            blocked = true;
+            return false;
         }
 
-        var direction = Vector2.Normalize(toDestination);
-        entity.Position += direction * stepDistance;
+        entity.Position = nextPosition;
+        return true;
+    }
+
+    private bool CanStep(BattleEntity entity, Vector2 from, Vector2 to)
+    {
+        var radius = entity.CollisionRadius;
+        var map = world.Map;
+
+        if (map.Arena is Circle arena && !CollisionHelper.CircleIsInside(to, radius, arena))
+        {
+            return false;
+        }
+
+        if (map.Bounds is Aabb bounds && !CollisionHelper.CircleIsInside(to, radius, bounds))
+        {
+            return false;
+        }
+
+        foreach (var obstacle in map.Obstacles ?? [])
+        {
+            if (CollisionHelper.CircleIntersects(to, radius, obstacle))
+            {
+                return false;
+            }
+        }
+
+        foreach (var other in world.Entities.All())
+        {
+            if (other.Id == entity.Id || other.IsDowned)
+            {
+                continue;
+            }
+
+            if (!CollisionHelper.AllowsEntityStep(
+                    from,
+                    to,
+                    radius,
+                    other.Position,
+                    other.CollisionRadius))
+            {
+                return false;
+            }
+        }
+
         return true;
     }
 

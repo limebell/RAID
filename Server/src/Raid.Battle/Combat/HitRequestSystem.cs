@@ -9,7 +9,6 @@ public sealed class HitRequestSystem(BattleWorld world)
 
     public void Enqueue(HitRequest request)
     {
-        ArgumentNullException.ThrowIfNull(request);
         _requests.Enqueue(request);
     }
 

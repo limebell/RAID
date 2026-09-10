@@ -1,0 +1,7 @@
+{
+  "definitionId": "practice.dummy",
+  "collisionRadius": 1,
+  "maxHealth": 100000,
+  "moveSpeed": 0,
+  "turnSpeedRadiansPerSecond": 6
+}

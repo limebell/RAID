@@ -1,3 +1,5 @@
+using Raid.Battle.Combat;
+using Raid.Battle.Commands;
 using Raid.Battle.Entities;
 using Raid.Battle.Events;
 using Raid.Battle.Snapshots;
@@ -7,12 +9,9 @@ namespace Raid.Battle.Actions;
 public sealed class GameAction(
     ActionId id,
     EntityId ownerId,
-    string skillId,
+    SkillDefinition skill,
     IReadOnlyList<IActionPhase> phases,
-    EntityId? targetId = null,
-    float damage = 0f,
-    int manaCost = 0,
-    int cooldownMilliseconds = 0)
+    SkillTarget target)
 {
     private readonly IReadOnlyList<IActionPhase> _phases = phases.Count > 0
         ? phases
@@ -24,15 +23,25 @@ public sealed class GameAction(
 
     public EntityId OwnerId { get; } = ownerId;
 
-    public string SkillId { get; } = skillId;
+    public SkillDefinition Skill { get; } = skill;
 
-    public EntityId? TargetId { get; } = targetId;
+    public string SkillId { get; } = skill.SkillId;
 
-    public float Damage { get; } = damage;
+    public SkillTarget Target { get; } = target;
 
-    public int ManaCost { get; } = manaCost;
+    public EntityId? TargetId => Target.EntityId;
 
-    public int CooldownMilliseconds { get; } = cooldownMilliseconds;
+    public float Damage { get; } = skill.Damage;
+
+    public int ManaCost { get; } = skill.ManaCost;
+
+    public int CooldownMilliseconds { get; } = skill.CooldownMilliseconds;
+
+    public bool LocksMovement { get; } = skill.LocksMovement;
+
+    public bool ReleaseRequested { get; set; }
+
+    public float ChargeRatio { get; set; } = 1f;
 
     public ActionEndReason? EndReason { get; private set; }
 
@@ -40,6 +49,18 @@ public sealed class GameAction(
         _currentPhaseIndex >= 0 && _currentPhaseIndex < _phases.Count
             ? _phases[_currentPhaseIndex].Kind
             : null;
+
+    public float ScaledDamage => Damage * ChargeRatio;
+
+    public float ScaledRange => Skill.Range * ChargeRatio;
+
+    public float CurrentPhaseDurationSeconds => CurrentPhaseKind switch
+    {
+        ActionPhaseKind.Casting => Skill.CastTimeMilliseconds / 1000f,
+        ActionPhaseKind.Holding or ActionPhaseKind.Charging =>
+            Skill.ChannelTimeMilliseconds / 1000f,
+        _ => 0f
+    };
 
     public void Start(ActionContext context)
     {
@@ -50,7 +71,9 @@ public sealed class GameAction(
             EntitySnapshot.FromEntity(context.Owner),
             Id,
             SkillId,
-            CurrentPhaseKind));
+            CurrentPhaseKind,
+            CurrentPhaseDurationSeconds,
+            Target));
     }
 
     public ActionUpdateResult Update(float deltaTime)
@@ -108,7 +131,9 @@ public sealed class GameAction(
             EntitySnapshot.FromEntity(_context.Owner),
             Id,
             SkillId,
-            phase.Kind));
+            phase.Kind,
+            CurrentPhaseDurationSeconds,
+            Target));
         return true;
     }
 

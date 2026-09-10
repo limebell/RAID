@@ -1,6 +1,7 @@
 using System.Numerics;
 using Microsoft.AspNetCore.SignalR;
 using Raid.Battle.Commands;
+using Raid.Battle.Definitions;
 using Raid.Contracts.Battle;
 using Raid.Contracts.Battle.Commands;
 using Raid.Contracts.Battle.Snapshots;
@@ -48,7 +49,8 @@ public sealed class BattleHub(
         SessionParticipant participant;
         try
         {
-            participant = session.Join(request.UserId);
+            var selectedClass = ClassDefinitionLoader.Load(session.World.DefaultClassId);
+            participant = session.Join(request.UserId, selectedClass, request.BarSkillIds);
         }
         catch (InvalidOperationException) when (session.IsClosed)
         {
@@ -79,10 +81,22 @@ public sealed class BattleHub(
             playerClass.Skills
                 .Select(skill => new SkillInfoDto(
                     skill.SkillId,
+                    skill.Kind,
                     skill.TargetingMode,
                     skill.ManaCost,
                     skill.Range,
-                    skill.Width))
+                    skill.Width,
+                    skill.CastTimeMilliseconds,
+                    skill.ChannelTimeMilliseconds,
+                    skill.ProjectileSpeed,
+                    skill.IsBasicAttack,
+                    skill.ChainToSkillId,
+                    skill.ChainWindowMilliseconds,
+                    skill.ToggleOnBuffId,
+                    skill.ToggleOffBuffId,
+                    skill.RequiredBuffId,
+                    skill.VariantGroup,
+                    participant.Player.SkillBar.GetSlot(skill.SkillId)))
                 .ToArray(),
             BattleDtoMapper.ToPracticeSettingsDto(session.World.Settings.Practice),
             BattleDtoMapper.ToSnapshot(session));
@@ -137,6 +151,23 @@ public sealed class BattleHub(
         return Task.CompletedTask;
     }
 
+    public Task AttackMove(AttackMoveRequest request)
+    {
+        var (session, participant) = RequireCaller();
+
+        logger.LogTrace(
+            "AttackMove session {SessionId} player {PlayerEntityId} seq {ClientSequence} -> ({X}, {Y})",
+            session.Id,
+            participant.Player.Id.Value,
+            request.ClientSequence,
+            request.X,
+            request.Y);
+
+        session.World.Commands.Enqueue(
+            new AttackMoveCommand(participant.Player.Id, new Vector2(request.X, request.Y)));
+        return Task.CompletedTask;
+    }
+
     public Task StopMoving(StopMovingRequest request)
     {
         var (session, participant) = RequireCaller();
@@ -172,6 +203,21 @@ public sealed class BattleHub(
                 participant.Player.Id,
                 skill,
                 SkillTargetMapper.ToBattleTarget(request.Target)));
+        return Task.CompletedTask;
+    }
+
+    public Task ReleaseSkill(ReleaseSkillRequest request)
+    {
+        var (session, participant) = RequireCaller();
+        logger.LogDebug(
+            "ReleaseSkill session {SessionId} player {PlayerEntityId} seq {ClientSequence} skill {SkillId}",
+            session.Id,
+            participant.Player.Id.Value,
+            request.ClientSequence,
+            request.SkillId);
+
+        session.World.Commands.Enqueue(
+            new ReleaseSkillCommand(participant.Player.Id, request.SkillId));
         return Task.CompletedTask;
     }
 

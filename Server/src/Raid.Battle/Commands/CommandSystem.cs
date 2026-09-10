@@ -11,7 +11,6 @@ public sealed class CommandSystem(BattleWorld world)
 
     public void Enqueue(IWorldCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
         _commands.Enqueue(command);
     }
 

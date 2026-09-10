@@ -15,7 +15,8 @@ public sealed record EntitySnapshot(
     float CurrentMana,
     float MaxMana,
     bool IsBusy,
-    string? CurrentPhase)
+    string? CurrentPhase,
+    float CurrentShield = 0f)
 {
     public static EntitySnapshot FromEntity(BattleEntity entity)
     {
@@ -36,6 +37,7 @@ public sealed record EntitySnapshot(
             currentMana,
             maxMana,
             entity.Actions.IsBusy,
-            entity.Actions.CurrentAction?.CurrentPhaseKind?.ToString());
+            entity.Actions.CurrentAction?.CurrentPhaseKind?.ToString(),
+            entity.CurrentShield);
     }
 }

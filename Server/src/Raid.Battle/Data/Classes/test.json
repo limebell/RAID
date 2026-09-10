@@ -1,0 +1,384 @@
+{
+  "classId": "test",
+  "displayName": "Test Class",
+  "maxHealth": 1000,
+  "maxMana": 1000,
+  "manaRegenPerSecond": 25,
+  "moveSpeed": 6,
+  "turnSpeedRadiansPerSecond": 36,
+  "skills": [
+    {
+      "skillId": "test.instant_strike",
+      "kind": "instant",
+      "targetingMode": "entity",
+      "range": 8,
+      "width": 0,
+      "damage": 100,
+      "manaCost": 60,
+      "cooldownMilliseconds": 3000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 300,
+      "projectileSpeed": 12
+    },
+    {
+      "skillId": "test.meteor_strike",
+      "kind": "cast",
+      "targetingMode": "point",
+      "range": 10,
+      "width": 3,
+      "damage": 250,
+      "manaCost": 120,
+      "cooldownMilliseconds": 16000,
+      "castTimeMilliseconds": 1000,
+      "windupTimeMilliseconds": 1000,
+      "recoveryTimeMilliseconds": 500,
+      "projectileSpeed": 16
+    },
+    {
+      "skillId": "test.heal_pulse",
+      "kind": "instant",
+      "targetingMode": "none",
+      "range": 0,
+      "width": 0,
+      "damage": 0,
+      "manaCost": 0,
+      "cooldownMilliseconds": 4000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 200,
+      "effects": [
+        {
+          "trigger": "onActivation",
+          "heal": 200
+        }
+      ]
+    },
+    {
+      "skillId": "test.grant_shield",
+      "kind": "instant",
+      "targetingMode": "none",
+      "range": 0,
+      "width": 0,
+      "damage": 0,
+      "manaCost": 0,
+      "cooldownMilliseconds": 6000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 200,
+      "effects": [
+        {
+          "trigger": "onActivation",
+          "shield": 150
+        }
+      ]
+    },
+    {
+      "skillId": "test.bleed_strike",
+      "kind": "instant",
+      "targetingMode": "entity",
+      "range": 8,
+      "width": 0,
+      "damage": 50,
+      "manaCost": 40,
+      "cooldownMilliseconds": 5000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 200,
+      "effects": [
+        {
+          "trigger": "onHit",
+          "status": "bleed",
+          "durationMilliseconds": 3000,
+          "tickDamage": 20,
+          "tickIntervalMilliseconds": 1000
+        }
+      ]
+    },
+    {
+      "skillId": "test.mana_tap",
+      "kind": "instant",
+      "targetingMode": "entity",
+      "range": 8,
+      "width": 0,
+      "damage": 50,
+      "manaCost": 40,
+      "cooldownMilliseconds": 3000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 200,
+      "effects": [
+        {
+          "trigger": "onHit",
+          "manaRestorePercentOfMax": 10
+        }
+      ]
+    },
+    {
+      "skillId": "test.arrow_strike",
+      "kind": "instant",
+      "targetingMode": "direction",
+      "range": 14,
+      "width": 2,
+      "damage": 100,
+      "manaCost": 40,
+      "cooldownMilliseconds": 5000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 300,
+      "recoveryTimeMilliseconds": 200,
+      "projectileSpeed": 20
+    },
+    {
+      "skillId": "test.hold_guard",
+      "kind": "hold",
+      "targetingMode": "none",
+      "range": 0,
+      "width": 6,
+      "damage": 180,
+      "manaCost": 80,
+      "cooldownMilliseconds": 8000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 200,
+      "recoveryTimeMilliseconds": 300,
+      "channelTimeMilliseconds": 3000,
+      "locksMovement": true,
+      "effects": [
+        {
+          "trigger": "whileHolding",
+          "shield": 200,
+          "status": "statusImmunity"
+        }
+      ]
+    },
+    {
+      "skillId": "test.charge_shot",
+      "kind": "charge",
+      "targetingMode": "entity",
+      "range": 12,
+      "width": 0,
+      "damage": 200,
+      "manaCost": 70,
+      "cooldownMilliseconds": 6000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 200,
+      "channelTimeMilliseconds": 1000
+    },
+    {
+      "skillId": "test.direction_slash",
+      "kind": "instant",
+      "targetingMode": "direction",
+      "range": 6,
+      "width": 3,
+      "damage": 80,
+      "manaCost": 30,
+      "cooldownMilliseconds": 4000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 200
+    },
+    {
+      "skillId": "test.basic_attack_b",
+      "kind": "instant",
+      "targetingMode": "entity",
+      "range": 6,
+      "width": 0,
+      "damage": 40,
+      "manaCost": 0,
+      "cooldownMilliseconds": 800,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 50,
+      "recoveryTimeMilliseconds": 150,
+      "isBasicAttack": true,
+      "requiredBuffId": "test.stance_b",
+      "variantGroup": "test.basic_attack"
+    },
+    {
+      "skillId": "test.basic_attack_a",
+      "kind": "instant",
+      "targetingMode": "entity",
+      "range": 10,
+      "width": 0,
+      "damage": 70,
+      "manaCost": 0,
+      "cooldownMilliseconds": 1400,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 120,
+      "recoveryTimeMilliseconds": 250,
+      "isBasicAttack": true,
+      "requiredBuffId": "test.stance_a",
+      "variantGroup": "test.basic_attack"
+    },
+    {
+      "skillId": "test.zone_burn",
+      "kind": "instant",
+      "targetingMode": "point",
+      "range": 12,
+      "width": 0,
+      "damage": 0,
+      "manaCost": 50,
+      "cooldownMilliseconds": 8000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 200,
+      "effects": [
+        {
+          "trigger": "onActivation",
+          "zoneRadius": 3,
+          "zoneDurationMilliseconds": 3000,
+          "zoneTickIntervalMilliseconds": 1000,
+          "zoneTickDamage": 30,
+          "zoneManaRestoreOnEnemyDamage": 15
+        }
+      ]
+    },
+    {
+      "skillId": "test.zone_mend",
+      "kind": "instant",
+      "targetingMode": "point",
+      "range": 12,
+      "width": 0,
+      "damage": 0,
+      "manaCost": 40,
+      "cooldownMilliseconds": 8000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 200,
+      "effects": [
+        {
+          "trigger": "onActivation",
+          "zoneRadius": 3,
+          "zoneDurationMilliseconds": 3000,
+          "zoneTickIntervalMilliseconds": 1000,
+          "zoneTickHeal": 40
+        }
+      ]
+    },
+    {
+      "skillId": "test.stun_bolt",
+      "kind": "instant",
+      "targetingMode": "entity",
+      "range": 8,
+      "width": 0,
+      "damage": 10,
+      "manaCost": 30,
+      "cooldownMilliseconds": 6000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 200,
+      "effects": [
+        {
+          "trigger": "onHit",
+          "status": "stun",
+          "durationMilliseconds": 1000
+        }
+      ]
+    },
+    {
+      "skillId": "test.dash",
+      "kind": "instant",
+      "targetingMode": "direction",
+      "range": 4,
+      "width": 1,
+      "damage": 0,
+      "manaCost": 0,
+      "cooldownMilliseconds": 4000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 0,
+      "recoveryTimeMilliseconds": 150,
+      "interruptsActions": true,
+      "dashDistance": 4,
+      "dashSpeed": 40,
+      "instantDash": false,
+      "locksMovement": true
+    },
+    {
+      "skillId": "test.chain_smash_a",
+      "kind": "instant",
+      "targetingMode": "direction",
+      "range": 6,
+      "width": 3,
+      "damage": 50,
+      "manaCost": 20,
+      "cooldownMilliseconds": 5000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 200,
+      "chainToSkillId": "test.chain_smash_b",
+      "chainWindowMilliseconds": 800
+    },
+    {
+      "skillId": "test.chain_smash_b",
+      "kind": "instant",
+      "targetingMode": "direction",
+      "range": 6,
+      "width": 4,
+      "damage": 75,
+      "manaCost": 20,
+      "cooldownMilliseconds": 0,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 200,
+      "chainToSkillId": "test.chain_smash_c",
+      "chainWindowMilliseconds": 800
+    },
+    {
+      "skillId": "test.chain_smash_c",
+      "kind": "instant",
+      "targetingMode": "direction",
+      "range": 6,
+      "width": 5,
+      "damage": 100,
+      "manaCost": 20,
+      "cooldownMilliseconds": 0,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 200
+    },
+    {
+      "skillId": "test.stance_toggle",
+      "kind": "toggle",
+      "targetingMode": "none",
+      "range": 0,
+      "width": 0,
+      "damage": 0,
+      "manaCost": 0,
+      "cooldownMilliseconds": 200,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 0,
+      "recoveryTimeMilliseconds": 0,
+      "toggleOnBuffId": "test.stance_a",
+      "toggleOffBuffId": "test.stance_b"
+    },
+    {
+      "skillId": "test.stance_shot_b",
+      "kind": "instant",
+      "targetingMode": "direction",
+      "range": 6,
+      "width": 4,
+      "damage": 40,
+      "manaCost": 25,
+      "cooldownMilliseconds": 4000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 200,
+      "requiredBuffId": "test.stance_b",
+      "variantGroup": "test.stance_shot"
+    },
+    {
+      "skillId": "test.stance_shot_a",
+      "kind": "instant",
+      "targetingMode": "direction",
+      "range": 14,
+      "width": 1,
+      "damage": 80,
+      "manaCost": 25,
+      "cooldownMilliseconds": 4000,
+      "castTimeMilliseconds": 0,
+      "windupTimeMilliseconds": 100,
+      "recoveryTimeMilliseconds": 200,
+      "requiredBuffId": "test.stance_a",
+      "variantGroup": "test.stance_shot"
+    }
+  ]
+}

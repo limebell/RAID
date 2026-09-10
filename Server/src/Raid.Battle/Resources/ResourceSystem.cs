@@ -25,6 +25,25 @@ public sealed class ResourceSystem(BattleWorld world)
         return true;
     }
 
+    public void RestoreMana(PlayerEntity player, float amount)
+    {
+        if (amount <= 0f)
+        {
+            return;
+        }
+
+        var before = player.CurrentMana;
+        player.CurrentMana = MathF.Min(player.MaxMana, player.CurrentMana + amount);
+        if (player.CurrentMana == before)
+        {
+            return;
+        }
+
+        world.Events.Add(new ResourceChangedEvent(
+            world.Tick,
+            EntitySnapshot.FromEntity(player)));
+    }
+
     public void Update(float deltaTime)
     {
         _manaRegenElapsedSeconds += deltaTime;

@@ -16,19 +16,20 @@ public sealed class ManaSystemTests
     {
         var (world, player) = CreatePracticeWithPlayer(finiteMana: true);
 
-        Assert.Equal(TestClassDefinition.MaxMana, player.CurrentMana);
-        Assert.Equal(TestClassDefinition.MaxMana, player.MaxMana);
-        Assert.Equal(TestClassDefinition.ManaRegenPerSecond, player.ManaRegenPerSecond);
+        var playerClass = ClassDefinitionLoader.Load("test");
+        Assert.Equal(playerClass.MaxMana, player.CurrentMana);
+        Assert.Equal(playerClass.MaxMana, player.MaxMana);
+        Assert.Equal(playerClass.ManaRegenPerSecond, player.ManaRegenPerSecond);
     }
 
     [Fact]
     public void Activation_SpendsMana_AndAppliesDamage()
     {
         var (world, player) = CreatePracticeWithPlayer(finiteMana: true);
-        var skill = TestClassDefinition.InstantStrike;
+        var skill = player.FindSkill("test.instant_strike")!;
         var dummy = world.Entities.Dummies().Single();
 
-        player.CurrentMana = skill.ManaCost - TestClassDefinition.ManaRegenPerSecond;
+        player.CurrentMana = skill.ManaCost - player.ManaRegenPerSecond;
         world.Commands.Enqueue(new UseSkillCommand(
             player.Id,
             skill,
@@ -36,6 +37,9 @@ public sealed class ManaSystemTests
         world.Loop.Tick();
 
         Assert.Equal(0f, player.CurrentMana);
+        Assert.Equal(100_000f, dummy.CurrentHealth);
+
+        world.Loop.Tick();
         Assert.Equal(100_000f - skill.Damage, dummy.CurrentHealth);
     }
 
@@ -43,11 +47,11 @@ public sealed class ManaSystemTests
     public void Activation_SkipsDamage_WhenManaIsInsufficient()
     {
         var (world, player) = CreatePracticeWithPlayer(finiteMana: true);
-        var skill = TestClassDefinition.InstantStrike;
+        var skill = player.FindSkill("test.instant_strike")!;
         var dummy = world.Entities.Dummies().Single();
         var healthBefore = dummy.CurrentHealth;
 
-        player.CurrentMana = skill.ManaCost - TestClassDefinition.ManaRegenPerSecond - 1f;
+        player.CurrentMana = skill.ManaCost - player.ManaRegenPerSecond - 1f;
         world.Commands.Enqueue(new UseSkillCommand(
             player.Id,
             skill,
@@ -68,8 +72,8 @@ public sealed class ManaSystemTests
         settings.Practice.HighManaRegen = false;
         var setup = BattleWorldFactory.Create(RaidMode.Practice, settings);
         var world = setup.World;
-        var player = BattleWorldFactory.SpawnPlayer(world, "player-1", participantSlot: 0);
-        var skill = TestClassDefinition.MeteorStrike;
+        var player = PracticeSpawn.Player(world, "player-1", participantSlot: 0);
+        var skill = player.FindSkill("test.meteor_strike")!;
         var dummy = world.Entities.Dummies().Single();
 
         player.CurrentMana = 0f;
@@ -84,7 +88,7 @@ public sealed class ManaSystemTests
 
         world.Loop.Tick();
         Assert.True(player.Actions.IsBusy);
-        Assert.Equal(TestClassDefinition.ManaRegenPerSecond, player.CurrentMana);
+        Assert.Equal(player.ManaRegenPerSecond, player.CurrentMana);
     }
 
     [Fact]
@@ -111,7 +115,7 @@ public sealed class ManaSystemTests
         player.CurrentMana = 0f;
         world.Loop.Tick();
 
-        Assert.Equal(TestClassDefinition.MaxMana, player.CurrentMana);
+        Assert.Equal(player.MaxMana, player.CurrentMana);
     }
 
     [Fact]
@@ -124,7 +128,7 @@ public sealed class ManaSystemTests
 
         world.Loop.Tick();
 
-        Assert.Equal(TestClassDefinition.ManaRegenPerSecond, player.CurrentMana);
+        Assert.Equal(player.ManaRegenPerSecond, player.CurrentMana);
     }
 
     [Fact]
@@ -138,7 +142,7 @@ public sealed class ManaSystemTests
         var events = world.Events.Drain();
         Assert.Contains(events, battleEvent => battleEvent is ResourceChangedEvent changed
             && changed.Entity.EntityId == player.Id
-            && changed.Entity.CurrentMana == TestClassDefinition.ManaRegenPerSecond);
+            && changed.Entity.CurrentMana == player.ManaRegenPerSecond);
     }
 
     private static (BattleWorld World, PlayerEntity Player) CreatePracticeWithPlayer(bool finiteMana)
@@ -149,7 +153,7 @@ public sealed class ManaSystemTests
         };
         settings.Practice.HighManaRegen = !finiteMana;
         var setup = BattleWorldFactory.Create(RaidMode.Practice, settings);
-        var player = BattleWorldFactory.SpawnPlayer(setup.World, "player-1", participantSlot: 0);
+        var player = PracticeSpawn.Player(setup.World, "player-1", participantSlot: 0);
         return (setup.World, player);
     }
 }

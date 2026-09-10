@@ -9,7 +9,6 @@ public sealed class BattleEventBuffer
 
     public void Add(IBattleEvent battleEvent)
     {
-        ArgumentNullException.ThrowIfNull(battleEvent);
         _events.Add(battleEvent);
     }
 

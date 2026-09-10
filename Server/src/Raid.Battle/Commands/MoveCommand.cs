@@ -1,7 +1,6 @@
 using System.Numerics;
 using Raid.Battle.Actions;
 using Raid.Battle.Entities;
-using Raid.Battle.Movement;
 
 namespace Raid.Battle.Commands;
 
@@ -19,12 +18,23 @@ public sealed class MoveCommand(EntityId issuerId, Vector2 destination) : IWorld
             return CommandResult.Failure(MoveFailureReason.PlayerNotFound);
         }
 
+        if (player.Actions.LocksMovement)
+        {
+            return CommandResult.Failure(MoveFailureReason.PlayerAlreadyActing);
+        }
+
+        if (context.World.Effects.IsMovementLocked(player.Id))
+        {
+            return CommandResult.Failure(MoveFailureReason.PlayerStunned);
+        }
+
         if (player.Actions.IsCasting)
         {
             context.World.Actions.Cancel(player, ActionEndReason.CancelledByMove);
         }
         else if (player.Actions.IsRecovering)
         {
+            player.CombatOrder.Clear();
             context.World.Actions.QueuePendingInput(player, this);
             return CommandResult.Success();
         }
@@ -33,25 +43,8 @@ public sealed class MoveCommand(EntityId issuerId, Vector2 destination) : IWorld
             return CommandResult.Failure(MoveFailureReason.PlayerAlreadyActing);
         }
 
-        var desiredFacingDirection = Destination - player.Position;
-        if (desiredFacingDirection == Vector2.Zero)
-        {
-            desiredFacingDirection = player.FacingDirection;
-        }
-        else
-        {
-            desiredFacingDirection = Vector2.Normalize(desiredFacingDirection);
-        }
-
-        context.World.Movement.SetIntent(
-            new MovementIntent(
-                player.Id,
-                Destination,
-                desiredFacingDirection,
-                MoveSpeed: player.MoveSpeed,
-                TurnSpeedRadiansPerSecond: player.TurnSpeedRadiansPerSecond,
-                FacingPolicy: MovementFacingPolicy.RotateWhileMoving));
-
+        player.CombatOrder.Clear();
+        context.World.Movement.MoveTo(player, Destination);
         return CommandResult.Success();
     }
 }

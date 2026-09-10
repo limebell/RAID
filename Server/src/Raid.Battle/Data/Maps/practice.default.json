@@ -1,0 +1,17 @@
+{
+  "id": "practice.default",
+  "arena": {
+    "center": { "x": 0, "y": 0 },
+    "radius": 100
+  },
+  "obstacles": [],
+  "playerSpawns": [
+    { "position": { "x": 0, "y": 0 }, "facingDirection": { "x": 0, "y": 1 } },
+    { "position": { "x": 2, "y": 0 }, "facingDirection": { "x": 0, "y": 1 } },
+    { "position": { "x": -2, "y": 0 }, "facingDirection": { "x": 0, "y": 1 } },
+    { "position": { "x": 0, "y": 2 }, "facingDirection": { "x": 0, "y": 1 } }
+  ],
+  "entitySpawns": [
+    { "definitionId": "practice.dummy", "position": { "x": 5, "y": 0 } }
+  ]
+}

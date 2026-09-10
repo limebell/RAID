@@ -4,21 +4,24 @@ using Raid.Contracts.Common;
 
 namespace Raid.Battle.Entities;
 
-public sealed class DummyEntity(
-    EntityId id,
-    Vector2 position,
-    float moveSpeed = 0f,
-    float turnSpeedRadiansPerSecond = 6f,
-    float maxHealth = 100_000f,
-    string definitionId = PracticeDummyDefinition.DefinitionId)
-    : BattleEntity(
-        id,
-        EntityKind.Dummy,
-        position,
-        Vector2.UnitX,
-        moveSpeed,
-        turnSpeedRadiansPerSecond,
-        maxHealth)
+public sealed class DummyEntity : BattleEntity
 {
-    public override string DefinitionId { get; } = definitionId;
+    public DummyEntity(
+        EntityId id,
+        Vector2 position,
+        EntityDefinition definition)
+        : base(
+            id,
+            EntityKind.Dummy,
+            position,
+            Vector2.UnitX,
+            definition.MoveSpeed,
+            definition.TurnSpeedRadiansPerSecond,
+            definition.MaxHealth)
+    {
+        DefinitionId = definition.DefinitionId;
+        CollisionRadius = definition.CollisionRadius;
+    }
+
+    public override string DefinitionId { get; }
 }

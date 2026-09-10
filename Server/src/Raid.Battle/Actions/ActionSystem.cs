@@ -15,9 +15,6 @@ public sealed class ActionSystem(BattleWorld world)
 
     public bool TryStart(BattleEntity owner, GameAction action)
     {
-        ArgumentNullException.ThrowIfNull(owner);
-        ArgumentNullException.ThrowIfNull(action);
-
         if (owner.Actions.CurrentAction is not null)
         {
             return false;
@@ -28,11 +25,52 @@ public sealed class ActionSystem(BattleWorld world)
 
         var context = new ActionContext(world, owner, action)
         {
-            TargetId = action.TargetId,
             Damage = action.Damage
         };
+
+        if (action.Skill.CommitsOnStart
+            && owner is PlayerEntity player
+            && !TryCommitHoldResources(player, action))
+        {
+            owner.Actions.CurrentAction = null;
+            return false;
+        }
+
         action.Start(context);
         return true;
+    }
+
+    private bool TryCommitHoldResources(PlayerEntity player, GameAction action)
+    {
+        if (action.ManaCost > 0 && !world.Resources.TrySpendMana(player, action.ManaCost))
+        {
+            return false;
+        }
+
+        world.Cooldowns.StartCooldown(player, action.SkillId, action.CooldownMilliseconds);
+        return true;
+    }
+
+    public void InterruptCurrent(PlayerEntity player)
+    {
+        var action = player.Actions.CurrentAction;
+        if (action is null)
+        {
+            return;
+        }
+
+        if (!action.Skill.CommitsOnStart
+            && action.CurrentPhaseKind is ActionPhaseKind.Casting or ActionPhaseKind.Windup)
+        {
+            if (action.ManaCost > 0)
+            {
+                world.Resources.TrySpendMana(player, action.ManaCost);
+            }
+
+            world.Cooldowns.StartCooldown(player, action.SkillId, action.CooldownMilliseconds);
+        }
+
+        Cancel(player, ActionEndReason.CancelledByInterrupt);
     }
 
     public void Cancel(BattleEntity owner, ActionEndReason reason)

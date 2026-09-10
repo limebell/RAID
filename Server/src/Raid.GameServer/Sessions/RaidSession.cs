@@ -1,5 +1,5 @@
+using System.Numerics;
 using Raid.Battle.Combat;
-using Raid.Battle.Definitions;
 using Raid.Battle.World;
 using Raid.Contracts.Common;
 
@@ -44,7 +44,8 @@ public sealed class RaidSession(Guid id, BattleWorldSetup setup)
 
     public SessionParticipant Join(
         string userId,
-        PlayerClassDefinition? playerClass = null)
+        PlayerClassDefinition playerClass,
+        IReadOnlyList<string>? barSkillIds = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
 
@@ -63,11 +64,15 @@ public sealed class RaidSession(Guid id, BattleWorldSetup setup)
             }
 
             var slot = _nextSlot++;
+            var spawn = BattleWorldFactory.ResolvePlayerSpawn(World, slot);
             var player = BattleWorldFactory.SpawnPlayer(
                 World,
                 userId,
                 slot,
-                playerClass ?? TestClassDefinition.Create());
+                playerClass,
+                spawn.Position,
+                spawn.FacingDirection ?? Vector2.UnitY,
+                barSkillIds);
             var participant = new SessionParticipant(userId, slot, player);
             _participants.Add(participant);
             return participant;

@@ -6,8 +6,6 @@ public sealed class EntityRegistry
 
     public void Add(BattleEntity entity)
     {
-        ArgumentNullException.ThrowIfNull(entity);
-
         if (!_entities.TryAdd(entity.Id, entity))
         {
             throw new InvalidOperationException($"Entity '{entity.Id}' is already registered.");

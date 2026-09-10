@@ -16,5 +16,9 @@ public enum UseSkillFailureReason
     TargetPositionRequired = 12, // Target position is required.
     TargetPointOutOfRange = 13, // Target point is out of range.
     TargetDirectionRequired = 14, // Target direction is required.
-    TargetDirectionMustBeNonZero = 15 // Target direction must be non-zero.
+    TargetDirectionMustBeNonZero = 15, // Target direction must be non-zero.
+    PlayerStunned = 16, // Player is stunned.
+    PlayerSilenced = 17, // Player is silenced.
+    ChainNotAvailable = 18, // This chain follow-up is not available.
+    BuffNotAvailable = 19 // The required buff for this skill is not active.
 }

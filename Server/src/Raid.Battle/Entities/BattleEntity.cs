@@ -30,9 +30,13 @@ public abstract class BattleEntity(
 
     public float TurnSpeedRadiansPerSecond { get; } = turnSpeedRadiansPerSecond;
 
+    public float CollisionRadius { get; protected init; } = 0.4f;
+
     public float MaxHealth { get; } = maxHealth;
 
     public float CurrentHealth { get; internal set; } = maxHealth;
+
+    public float CurrentShield { get; internal set; }
 
     public bool IsDowned { get; internal set; }
 

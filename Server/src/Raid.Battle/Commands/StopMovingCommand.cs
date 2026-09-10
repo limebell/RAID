@@ -1,3 +1,4 @@
+using Raid.Battle.Actions;
 using Raid.Battle.Entities;
 
 namespace Raid.Battle.Commands;
@@ -14,12 +15,22 @@ public sealed class StopMovingCommand(EntityId issuerId) : IWorldCommand
             return CommandResult.Failure(StopMovingFailureReason.PlayerNotFound);
         }
 
-        if (player.Actions.IsBusy)
+        player.CombatOrder.Clear();
+        player.Actions.ClearPendingInput();
+
+        var current = player.Actions.CurrentAction;
+        if (current is not null
+            && current.Skill.IsBasicAttack
+            && !player.Actions.IsRecovering)
         {
-            return CommandResult.Failure(StopMovingFailureReason.PlayerAlreadyActing);
+            context.World.Actions.Cancel(player, ActionEndReason.CancelledByStop);
         }
 
-        context.World.Movement.ClearIntent(player.Id);
+        if (!player.Actions.LocksMovement)
+        {
+            context.World.Movement.ClearIntent(player.Id);
+        }
+
         return CommandResult.Success();
     }
 }
